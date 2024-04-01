@@ -4,7 +4,10 @@
     {
         static void Main(string[] args)
         {
-            RegexToNFA("ab(cde)");
+            //RegexToNFA("ab(cde)");
+            var post = Regex2NFA.Regex2Post("a|(b|c)|(d|e)");
+            if (post != null)
+                Console.WriteLine(post);
         }
 
         private struct NFALine
@@ -57,8 +60,12 @@
                         startNodeStack.Push(endNodeStack.Pop());
                         break;
                     case '[':
+                        startNodeStack.Push(statusId++);
+                        symbol.Push(currentChar);
                         break;
                     case ']':
+                        break;
+                    case '-':
                         break;
                     default:
                         startNodeStack.Push(statusId++);
