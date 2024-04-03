@@ -5,9 +5,30 @@
         static void Main(string[] args)
         {
             //RegexToNFA("ab(cde)");
-            var post = Regex2NFA.Regex2Post("a|(b|c)|(d|e)");
+            var post = Regex2NFA.Regex2Post("abc");
+            Console.WriteLine(post);
             if (post != null)
-                Console.WriteLine(post);
+            {
+                var startState = Regex2NFA.Post2NFA(post);
+                OutputNFA(startState);
+            }
+        }
+
+        private static void OutputNFA(Regex2NFA.State state)
+        {
+            if (state == null)
+                return;
+
+            if (state.Output != null)
+            {
+                Console.WriteLine("{0}--{1}-->{2}", state.Id, state.Char, state.Output.Id);
+                OutputNFA(state.Output);
+            }
+            if (state.Output1 != null)
+            {
+                Console.WriteLine("{0}--{1}-->{2}", state.Id, state.Char, state.Output1.Id);
+                OutputNFA(state.Output1);
+            }
         }
 
         private struct NFALine
