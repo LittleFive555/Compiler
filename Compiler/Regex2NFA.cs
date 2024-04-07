@@ -20,6 +20,7 @@ namespace Compiler
         /// 显示连接符
         /// </summary>
         private const char ConcatenationOperator = '.';
+        private const char EmptyOperator = ' ';
         private const int MaxParenLayer = 100;
 
         public static string? Regex2Post(string regex)
@@ -115,62 +116,53 @@ namespace Compiler
 
         public static int StateId;
 
-        public class State
+        public struct Line
         {
-            public int Id;
-            public int Char;
-            public State Output;
-            public State Output1;
-            public int LastList;
+            public char Symbol;
+            public int StartState;
+            public int EndState;
 
-            public State(int c, State output, State output1)
+            public override string ToString()
             {
-                Id = StateId++;
-
-                Char = c;
-                Output = output;
-                Output1 = output1;
-                LastList = 0;
+                return $"{StartState}--{Symbol}-->{EndState}";
             }
         }
 
-        static State matchState = new State((int)Result.Match, null, null);
-
-        class Fragment
+        public struct Fragment
         {
-            public State In;
-            public List<State> Out;
-
-            public Fragment(State start)
-            {
-                In = start;
-                Out = new List<State>();
-            }
-
-            public void Patch(State state)
-            {
-                foreach (var outstate in Out)
-                    outstate.Output = state;
-                Out.Add(state);
-            }
-
-            public void Append(Fragment fragment)
-            {
-                Out.AddRange(fragment.Out);
-            }
+            public int StartState;
+            public int EndState;
         }
 
-        public static State Post2NFA(string postfix)
+        public struct NFA
+        {
+            public int StartState;
+            public int ReceiveState;
+            public Dictionary<int, List<Line>> Lines;
+        }
+
+        public static void AddLine(Dictionary<int, List<Line>> nfa, Line line)
+        {
+            if (nfa.ContainsKey(line.StartState))
+                nfa[line.StartState].Add(line);
+            else
+                nfa[line.StartState] = new List<Line>() { line };
+        }
+
+        public static NFA? Post2NFA(string postfix)
         {
             if (string.IsNullOrEmpty(postfix))
                 return null;
 
+            Dictionary<int, List<Line>> lines = new Dictionary<int, List<Line>>();
             Stack<Fragment> fragmentStack = new Stack<Fragment>();
             Fragment frag;
             Fragment fragment1, fragment2;
-            State state;
 
-            for (int i = 0; i < postfix.Length; i++)
+            int start;
+            int end;
+            Line line;
+            for (int i = 0; i < postfix.Length && postfix[i] != '\0'; i++)
             {
                 char c = postfix[i];
                 switch (c)
@@ -178,54 +170,92 @@ namespace Compiler
                     case '.':
                         fragment2 = fragmentStack.Pop();
                         fragment1 = fragmentStack.Pop();
-                        fragment1.Patch(fragment2.In);
-                        frag = new Fragment(fragment1.In);
+                        start = fragment1.EndState;
+                        end = fragment2.StartState;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
+                        frag = new Fragment() { StartState = fragment1.StartState, EndState = fragment2.EndState};
                         fragmentStack.Push(frag);
                         break;
                     case '|':
                         fragment2 = fragmentStack.Pop();
                         fragment1 = fragmentStack.Pop();
-                        state = new State((int)Result.Split, fragment1.In, fragment2.In);
-                        frag = new Fragment(state);
-                        frag.Append(fragment1);
-                        frag.Append(fragment2);
+
+                        start = StateId++;
+                        end = fragment1.StartState;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
+                        end = fragment2.EndState;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
+                        frag = new Fragment();
+                        frag.StartState = start;
+
+                        start = fragment1.EndState;
+                        end = StateId++;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
+                        start = fragment2.EndState;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
+                        frag.EndState = end;
+
                         fragmentStack.Push(frag);
                         break;
                     case '?':
+                        frag = new Fragment();
                         fragment1 = fragmentStack.Pop();
-                        state = new State((int)Result.Split, fragment1.In, null);
-                        fragment1.Patch(state.Output1);
-                        frag = new Fragment(state);
-                        frag.Append(fragment1);
+                        start = StateId++;
+                        end = fragment1.StartState;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState= end };
+                        AddLine(lines, line);
+                        frag.StartState = start;
+
+                        end = StateId++;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
+                        frag.EndState = end;
+
+                        start = fragment1.EndState;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
                         fragmentStack.Push(frag);
                         break;
                     case '*':
                         fragment1 = fragmentStack.Pop();
-                        state = new State((int)Result.Split, fragment1.In, null);
-                        fragment1.Patch(state);
-                        frag = new Fragment(state);
-                        frag.Patch(state.Output1);
+                        start = fragment1.EndState;
+                        end = fragment1.StartState;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
+                        start = fragment1.StartState;
+                        end = StateId++;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
+                        frag = new Fragment() { StartState = start, EndState = end };
                         fragmentStack.Push(frag);
                         break;
                     case '+':
                         fragment1 = fragmentStack.Pop();
-                        state = new State((int)Result.Split, fragment1.In, null);
-                        fragment1.Patch(state);
-                        frag = new Fragment(fragment1.In);
-                        frag.Patch(state.Output1);
+                        start = fragment1.EndState;
+                        end = fragment1.StartState;
+                        line = new Line() { StartState = start, Symbol = EmptyOperator, EndState = end };
+                        AddLine(lines, line);
+                        frag = new Fragment() { StartState = fragment1.StartState, EndState = fragment1.EndState };
                         fragmentStack.Push(frag);
                         break;
                     default:
-                        fragmentStack.Push(new Fragment(new State(c, null, null)));
+                        start = StateId++;
+                        end = StateId++;
+                        line = new Line() { StartState = start, Symbol = c, EndState = end };
+                        AddLine(lines, line);
+                        fragmentStack.Push(new Fragment() {StartState = start, EndState = end});
                         break;
                 }
             }
             frag = fragmentStack.Pop();
             if (fragmentStack.Count != 0)
                 return null;
-
-            frag.Patch(matchState);
-            return frag.In;
+            return new NFA() { StartState = frag.StartState, ReceiveState = frag.EndState, Lines = lines };
         }
     }
 }
