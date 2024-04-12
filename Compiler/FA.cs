@@ -48,6 +48,17 @@ namespace Compiler
                 AllChars.Add(line.Symbol);
         }
 
+        public bool IsReceiveState(int stateId, out SortedList<int, LexicalUnit>? lexicalUnits)
+        {
+            if (ReceiveStates.ContainsKey(stateId))
+            {
+                lexicalUnits = ReceiveStates[stateId];
+                return true;
+            }
+            lexicalUnits = null;
+            return false;
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
