@@ -1,4 +1,6 @@
-﻿namespace Compiler
+﻿using System.Text;
+
+namespace Compiler
 {
     internal class LexicalRegex
     {
@@ -118,6 +120,20 @@
                         buffer[bufferIndex++] = nextChar;
                         natom++;
                         break;
+                    case '`': // NOTE 直到下一个'`'符号，中间的所有符号当做一个整体处理，直接写入
+                        if (natom > 1)
+                        {
+                            natom--;
+                            buffer[bufferIndex++] = ConcatenationOperator;
+                        }
+                        do
+                        {
+                            buffer[bufferIndex++] = currentChar;
+                            currentChar = regex[++currentIndex];
+                        } while (currentChar != '`');
+                        buffer[bufferIndex++] = currentChar;
+                        natom++;
+                        break;
                     case '(':
                         if (natom > 1)
                         {
@@ -205,6 +221,17 @@
                         line = new Line { StartState = start, Symbol = nextChar, EndState = end };
                         nfa.AddLine(line);
                         fragmentStack.Push(new Fragment() { StartState = start, EndState = end });
+                        break;
+                    case '`': // NOTE 直到下一个'`'符号之间的字符，连起来应该是一个词法单元的名字（即递归定义的正则）
+                        StringBuilder stringBuilder = new StringBuilder();
+                        c = postfix[++i];
+                        while (c != '`')
+                        {
+                            stringBuilder.Append(c);
+                            c = postfix[++i];
+                        }
+                        var lexicalUnitName = stringBuilder.ToString();
+                        // TODO 如何进行正则的递归构造
                         break;
                     case ConcatenationOperator:
                         fragment2 = fragmentStack.Pop();

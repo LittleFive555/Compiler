@@ -49,7 +49,7 @@ Lambda:=>
 
 SingleQuotationMark:'
 DoubleQuotationMarks:"
-PointMark:`
+PointMark:\`
 
 DoublePlus:\+\+
 DoubleMinus:--

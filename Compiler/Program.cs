@@ -6,7 +6,7 @@ namespace Compiler
     {
         static void Main(string[] args)
         {
-            Test2();
+            Test4();
         }
 
         /// <summary>
@@ -80,7 +80,8 @@ namespace Compiler
         {
             List<LexicalRegex> allLexicalRegex = LexicalRegexLoader.ReadRegexFromMultiFiles(
                 "E:\\SourceCode\\Compiler\\File\\ReservedWord.txt",
-                "E:\\SourceCode\\Compiler\\File\\Symbols.txt");
+                "E:\\SourceCode\\Compiler\\File\\Symbols.txt",
+                "E:\\SourceCode\\Compiler\\File\\LexerDefine.txt");
 
             FA nfa = Regex2NFA.Execute(allLexicalRegex.ToArray());
             Console.WriteLine("NFA:");
