@@ -3,12 +3,6 @@ using System.Text;
 
 namespace Compiler
 {
-    public class LexicalUnit
-    {
-        public string Name;
-        public int Priority;
-    }
-
     public class FA
     {
         public int StartState;

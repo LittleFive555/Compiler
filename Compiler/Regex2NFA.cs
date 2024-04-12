@@ -1,5 +1,17 @@
 ﻿namespace Compiler
 {
+    internal class LexicalRegex
+    {
+        public string Name;
+        public string RegexContent;
+        public int Priority;
+
+        public override string ToString()
+        {
+            return string.Format("Name: {0}, Regex: {1}, Priority: {2}", Name, RegexContent, Priority);
+        }
+    }
+
     internal class Regex2NFA
     {
         struct Paren
@@ -17,7 +29,7 @@
         /// <summary>
         /// 显示连接符
         /// </summary>
-        private const char ConcatenationOperator = '.';
+        private const char ConcatenationOperator = '—';
         private const int MaxParenLayer = 100;
 
         private enum Result
@@ -34,10 +46,42 @@
             public int EndState;
         }
 
-        public static FA? Execute(string name, string regex, int priority)
+        public static FA? Execute(LexicalRegex lexicalRegex)
         {
-            var post = Regex2Post(regex);
-            return Post2NFA(post, new LexicalUnit() { Name = name, Priority = priority });
+            var post = Regex2Post(lexicalRegex.RegexContent);
+            return Post2NFA(post, new LexicalUnit() { Name = lexicalRegex.Name, Priority = lexicalRegex.Priority });
+        }
+
+        public static FA? Execute(params LexicalRegex[] lexicalRegexs)
+        {
+            List<FA> nfaList = new List<FA>();
+            foreach (var lexicalRegex in lexicalRegexs)
+            {
+                var post = Regex2Post(lexicalRegex.RegexContent);
+                var nfa = Post2NFA(post, new LexicalUnit() { Name = lexicalRegex.Name, Priority = lexicalRegex.Priority });
+                nfaList.Add(nfa);
+            }
+
+            FA mergedNfa = new FA();
+            int start = StateId++;
+            Dictionary<int, SortedList<int, LexicalUnit>> receiveStates = new Dictionary<int, SortedList<int, LexicalUnit>>();
+            foreach (var nfa in nfaList)
+            {
+                foreach (var lineByStartState in nfa.LinesByStartState)
+                    mergedNfa.LinesByStartState.Add(lineByStartState.Key, lineByStartState.Value);
+                foreach (var lineByEndState in nfa.LinesByEndState)
+                    mergedNfa.LinesByEndState.Add(lineByEndState.Key, lineByEndState.Value);
+                foreach (var symbol in nfa.AllChars)
+                {
+                    if (!mergedNfa.AllChars.Contains(symbol))
+                        mergedNfa.AllChars.Add(symbol);
+                }
+                foreach (var receiveState in nfa.ReceiveStates)
+                    receiveStates.Add(receiveState.Key, receiveState.Value);
+                mergedNfa.AddLine(new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = nfa.StartState });
+            }
+            mergedNfa.SetStartAndReceive(start, receiveStates);
+            return mergedNfa;
         }
 
         private static string? Regex2Post(string regex)
@@ -63,6 +107,17 @@
                 var currentChar = regex[currentIndex];
                 switch (currentChar)
                 {
+                    case '\\': // NOTE 如果有转义符，则多向前读一个字符，并直接按default走一次
+                        var nextChar = regex[++currentIndex];
+                        if (natom > 1)
+                        {
+                            natom--;
+                            buffer[bufferIndex++] = ConcatenationOperator;
+                        }
+                        buffer[bufferIndex++] = currentChar;
+                        buffer[bufferIndex++] = nextChar;
+                        natom++;
+                        break;
                     case '(':
                         if (natom > 1)
                         {
@@ -143,7 +198,15 @@
                 char c = postfix[i];
                 switch (c)
                 {
-                    case '.':
+                    case '\\': // NOTE 如果有转义符，则多向前读一个字符，并直接按default走一次
+                        var nextChar = postfix[++i];
+                        start = StateId++;
+                        end = StateId++;
+                        line = new Line { StartState = start, Symbol = nextChar, EndState = end };
+                        nfa.AddLine(line);
+                        fragmentStack.Push(new Fragment() { StartState = start, EndState = end });
+                        break;
+                    case ConcatenationOperator:
                         fragment2 = fragmentStack.Pop();
                         fragment1 = fragmentStack.Pop();
                         start = fragment1.EndState;

@@ -13,14 +13,15 @@ namespace Compiler
             StringBuilder stringBuilder = new StringBuilder();
             int currentDFAStateId = dfa.StartState;
             LexicalUnit? lexicalUnit = null;
-            while (TryReadChar(stream, out char c))
+            while (true)
             {
+                char c = ReadChar(stream);
                 long forward = stream.Position;
                 stringBuilder.Append(c);
                 if (CanMove(dfa, currentDFAStateId, c, out int nextStateId))
                 {
                     currentDFAStateId = nextStateId;
-                    if (dfa.IsReceiveState(nextStateId, out SortedList<int, LexicalUnit> lexicalUnits))
+                    if (dfa.IsReceiveState(currentDFAStateId, out SortedList<int, LexicalUnit> lexicalUnits))
                     {
                         lexicalUnit = lexicalUnits.Values[lexicalUnits.Count - 1];
                         lastReceivePos = forward;
@@ -31,13 +32,16 @@ namespace Compiler
                 {
                     if (lexicalUnit != null)
                     {
-                        Token token = new Token()
+                        if (lexicalUnit.Name != Helpers.WhitespaceName) // 跳过空白
                         {
-                            Content = lastReceiveStr,
-                            LexicalUnit = lexicalUnit,
-                            Length = (int)(lastReceivePos - lexemeBegin),
-                        };
-                        result.Add(token);
+                            Token token = new Token()
+                            {
+                                Content = lastReceiveStr,
+                                LexicalUnit = lexicalUnit,
+                                Length = (int)(lastReceivePos - lexemeBegin),
+                            };
+                            result.Add(token);
+                        }
 
                         currentDFAStateId = dfa.StartState;
                         stream.Seek(lastReceivePos, SeekOrigin.Begin);
@@ -51,6 +55,8 @@ namespace Compiler
                         throw new Exception();
                     }
                 }
+                if (c.Equals('\0'))
+                    break;
             }
             return result;
         }
@@ -72,19 +78,13 @@ namespace Compiler
             return false;
         }
 
-        private static bool TryReadChar(Stream stream, out char c)
+        private static char ReadChar(Stream stream)
         {
             int readIn = stream.ReadByte();
             if (readIn == -1)
-            {
-                c = '\0';
-                return false;
-            }
+                return '\0';
             else
-            {
-                c = (char)readIn;
-                return true;
-            }
+                return (char)readIn;
         }
     }
 }
