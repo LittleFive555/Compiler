@@ -3,10 +3,16 @@ using System.Text;
 
 namespace Compiler
 {
+    public class LexicalUnit
+    {
+        public string Name;
+        public int Priority;
+    }
+
     public class FA
     {
         public int StartState;
-        public HashSet<int> ReceiveStates;
+        public Dictionary<int, SortedList<int, LexicalUnit>> ReceiveStates;
 
         public Dictionary<int, List<Line>> LinesByStartState;
         public Dictionary<int, List<Line>> LinesByEndState;
@@ -20,7 +26,7 @@ namespace Compiler
             AllChars = new HashSet<char>();
         }
 
-        public void SetStartAndReceive(int start, HashSet<int> receiveStates)
+        public void SetStartAndReceive(int start, Dictionary<int, SortedList<int, LexicalUnit>> receiveStates)
         {
             StartState = start;
             ReceiveStates = receiveStates;
@@ -38,21 +44,24 @@ namespace Compiler
             else
                 LinesByEndState[line.EndState] = new List<Line>() { line };
 
-            if (line.Symbol != FAHelpers.EmptyOperator && !AllChars.Contains(line.Symbol))
+            if (line.Symbol != Helpers.EmptyOperator && !AllChars.Contains(line.Symbol))
                 AllChars.Add(line.Symbol);
         }
 
         public override string ToString()
         {
-            // TODO
             StringBuilder sb = new StringBuilder();
             foreach (var stateLine in LinesByStartState)
             {
                 foreach (var line in stateLine.Value)
                 {
                     sb.Append(line.ToString());
-                    if (ReceiveStates.Contains(line.EndState))
+                    if (ReceiveStates.Keys.Contains(line.EndState))
+                    {
                         sb.Append(" *");
+                        foreach (var lexicalUnit in ReceiveStates[line.EndState].Values)
+                            sb.Append(string.Format("\n                Priority: {0} Name: {1}", lexicalUnit.Priority, lexicalUnit.Name));
+                    }
                     sb.Append('\n');
                 }
             }

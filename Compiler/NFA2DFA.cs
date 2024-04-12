@@ -15,7 +15,7 @@
             dfaStates.Add(dfaStartState, new HashSet<int>() { nfa.StartState });
             marks.Add(dfaStartState, false);
             CollectEmptyClosure(nfa, nfa.StartState, dfaStates[dfaStartState]);
-            HashSet<int> dfaReceiveStates = new HashSet<int>();
+            Dictionary<int, SortedList<int, LexicalUnit>> dfaReceiveStates = new Dictionary<int, SortedList<int, LexicalUnit>>();
             while (TryGetUnmarked(marks, out int stateId))
             {
                 marks[stateId] = true;
@@ -41,7 +41,7 @@
                         continue;
 
                     bool isAdded = false;
-                    int dfaStateId = -1;
+                    int dfaStateId;
                     foreach (var dfaState in dfaStates)
                     {
                         if (IsSame(dfaState.Value, newStateSet))
@@ -59,10 +59,19 @@
                     marks.Add(dfaStateId, false);
                     foreach (var nfaState in newStateSet)
                     {
-                        if (nfa.ReceiveStates.Contains(nfaState))
+                        if (nfa.ReceiveStates.Keys.Contains(nfaState))
                         {
-                            dfaReceiveStates.Add(dfaStateId);
-                            break;
+                            var lexicalUnit = nfa.ReceiveStates[nfaState].Values[0];
+                            if (!dfaReceiveStates.ContainsKey(dfaStateId))
+                            {
+                                dfaReceiveStates.Add(dfaStateId, new SortedList<int, LexicalUnit>() { { lexicalUnit.Priority, lexicalUnit } });
+                            }
+                            else
+                            {
+                                var dfaReceiveState = dfaReceiveStates[dfaStateId];
+                                if (!dfaReceiveState.ContainsKey(lexicalUnit.Priority))
+                                    dfaReceiveState.Add(lexicalUnit.Priority, lexicalUnit);
+                            }
                         }
                     }
                     dfa.AddLine(new Line() { StartState = stateId, Symbol = inputChar, EndState = dfaStateId });
@@ -80,7 +89,7 @@
             foreach (var line in nfa.LinesByStartState[startState])
             {
                 int endState = line.EndState;
-                if (line.Symbol == FAHelpers.EmptyOperator && !result.Contains(endState))
+                if (line.Symbol == Helpers.EmptyOperator && !result.Contains(endState))
                 {
                     result.Add(endState);
                     CollectEmptyClosure(nfa, endState, result);

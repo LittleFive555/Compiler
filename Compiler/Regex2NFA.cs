@@ -34,10 +34,10 @@
             public int EndState;
         }
 
-        public static FA? Execute(string regex)
+        public static FA? Execute(string name, string regex, int priority)
         {
             var post = Regex2Post(regex);
-            return Post2NFA(post);
+            return Post2NFA(post, new LexicalUnit() { Name = name, Priority = priority });
         }
 
         private static string? Regex2Post(string regex)
@@ -125,7 +125,7 @@
             return new string(buffer);
         }
 
-        private static FA? Post2NFA(string? postfix)
+        private static FA? Post2NFA(string? postfix, LexicalUnit lexicalUnit)
         {
             if (string.IsNullOrEmpty(postfix))
                 return null;
@@ -148,7 +148,7 @@
                         fragment1 = fragmentStack.Pop();
                         start = fragment1.EndState;
                         end = fragment2.StartState;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         frag = new Fragment() { StartState = fragment1.StartState, EndState = fragment2.EndState};
                         fragmentStack.Push(frag);
@@ -159,20 +159,20 @@
 
                         start = StateId++;
                         end = fragment1.StartState;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         end = fragment2.StartState;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         frag = new Fragment();
                         frag.StartState = start;
 
                         start = fragment1.EndState;
                         end = StateId++;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         start = fragment2.EndState;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         frag.EndState = end;
 
@@ -183,17 +183,17 @@
                         fragment1 = fragmentStack.Pop();
                         start = StateId++;
                         end = fragment1.StartState;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState= end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState= end };
                         nfa.AddLine(line);
                         frag.StartState = start;
 
                         end = StateId++;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         frag.EndState = end;
 
                         start = fragment1.EndState;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         fragmentStack.Push(frag);
                         break;
@@ -201,11 +201,11 @@
                         fragment1 = fragmentStack.Pop();
                         start = fragment1.EndState;
                         end = fragment1.StartState;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         start = fragment1.StartState;
                         end = StateId++;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         frag = new Fragment() { StartState = start, EndState = end };
                         fragmentStack.Push(frag);
@@ -214,7 +214,7 @@
                         fragment1 = fragmentStack.Pop();
                         start = fragment1.EndState;
                         end = fragment1.StartState;
-                        line = new Line() { StartState = start, Symbol = FAHelpers.EmptyOperator, EndState = end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         frag = new Fragment() { StartState = fragment1.StartState, EndState = fragment1.EndState };
                         fragmentStack.Push(frag);
@@ -232,13 +232,13 @@
             if (fragmentStack.Count != 0)
                 return null;
 
-            HashSet<int> receiveStates = new HashSet<int>() { frag.EndState };
-            CollectReceiveStatus(nfa, frag.EndState, receiveStates);
+            Dictionary<int, SortedList<int, LexicalUnit>> receiveStates = new Dictionary<int, SortedList<int, LexicalUnit>>();
+            CollectReceiveStatus(nfa, frag.EndState, receiveStates, lexicalUnit);
             nfa.SetStartAndReceive(frag.StartState, receiveStates);
             return nfa;
         }
 
-        private static void CollectReceiveStatus(FA nfa, int endState, ICollection<int> result)
+        private static void CollectReceiveStatus(FA nfa, int endState, Dictionary<int, SortedList<int, LexicalUnit>> result, LexicalUnit lexicalUnit)
         {
             if (!nfa.LinesByEndState.ContainsKey(endState))
                 return;
@@ -246,10 +246,10 @@
             foreach (var line in nfa.LinesByEndState[endState])
             {
                 int startState = line.StartState;
-                if (line.Symbol == FAHelpers.EmptyOperator && !result.Contains(startState))
+                if (line.Symbol == Helpers.EmptyOperator && !result.Keys.Contains(startState))
                 {
-                    result.Add(startState);
-                    CollectReceiveStatus(nfa, startState, result);
+                    result.Add(startState, new SortedList<int, LexicalUnit>() { { lexicalUnit.Priority, lexicalUnit } });
+                    CollectReceiveStatus(nfa, startState, result, lexicalUnit);
                 }
             }
         }
