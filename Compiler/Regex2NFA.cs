@@ -232,7 +232,10 @@
             if (fragmentStack.Count != 0)
                 return null;
 
-            Dictionary<int, SortedList<int, LexicalUnit>> receiveStates = new Dictionary<int, SortedList<int, LexicalUnit>>();
+            Dictionary<int, SortedList<int, LexicalUnit>> receiveStates = new Dictionary<int, SortedList<int, LexicalUnit>>() 
+            {
+                { frag.EndState, new SortedList<int, LexicalUnit>(){ { lexicalUnit.Priority, lexicalUnit } } }
+            };
             CollectReceiveStatus(nfa, frag.EndState, receiveStates, lexicalUnit);
             nfa.SetStartAndReceive(frag.StartState, receiveStates);
             return nfa;
