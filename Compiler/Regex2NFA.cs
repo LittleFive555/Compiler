@@ -56,6 +56,10 @@ namespace Compiler
 
         public static FA? Execute(params LexicalRegex[] lexicalRegexs)
         {
+            ReplaceRegex(lexicalRegexs);
+            //foreach (var regex in lexicalRegexs)
+            //    Console.WriteLine(regex.ToString());
+
             List<FA> nfaList = new List<FA>();
             foreach (var lexicalRegex in lexicalRegexs)
             {
@@ -84,6 +88,68 @@ namespace Compiler
             }
             mergedNfa.SetStartAndReceive(start, receiveStates);
             return mergedNfa;
+        }
+
+        /// <summary>
+        /// 替换递归定义的正则表达式
+        /// </summary>
+        /// <param name="lexicalRegexs"></param>
+        /// <exception cref="Exception"></exception>
+        private static void ReplaceRegex(LexicalRegex[] lexicalRegexs)
+        {
+            for (int i = 0; i < lexicalRegexs.Length; i++)
+            {
+                string currentRegex = lexicalRegexs[i].RegexContent;
+                int subregexNameStartIndex = 0;
+                bool isReadingSubregexName = false;
+                StringBuilder subregexNameBuilder = new StringBuilder();
+                for (int j = 0; j < currentRegex.Length; j++)
+                {
+                    char? lastChar = j == 0 ? null : currentRegex[j - 1];
+                    char c = currentRegex[j];
+                    if (c == '`' && (lastChar == null || lastChar != '\\'))
+                    {
+                        subregexNameBuilder.Append(c);
+                        if (!isReadingSubregexName)
+                        {
+                            isReadingSubregexName = true;
+                            subregexNameStartIndex = j;
+                        }
+                        else // 找到了完整的正则定义名
+                        {
+                            isReadingSubregexName = false;
+                            var regexName = subregexNameBuilder.ToString();
+                            subregexNameBuilder.Clear();
+                            string regexToReplace = null;
+                            for (int k = 0; k < i; k++)
+                            {
+                                if (lexicalRegexs[k].Name == regexName.Trim('`'))
+                                {
+                                    regexToReplace = lexicalRegexs[k].RegexContent;
+                                    break;
+                                }
+                            }
+                            if (regexToReplace == null)
+                            {
+                                throw new Exception(); // TODO 提示没有找到递归定义的正则表达式
+                            }
+                            else
+                            {
+                                regexToReplace = string.Format("({0})", regexToReplace);
+                                StringBuilder newRegexBuilder = new StringBuilder(currentRegex);
+                                newRegexBuilder.Replace(regexName, regexToReplace);
+                                lexicalRegexs[i].RegexContent = currentRegex = newRegexBuilder.ToString();
+                                j = subregexNameStartIndex + regexToReplace.Length;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (isReadingSubregexName)
+                            subregexNameBuilder.Append(c);
+                    }
+                }
+            }
         }
 
         private static string? Regex2Post(string regex)
@@ -118,20 +184,6 @@ namespace Compiler
                         }
                         buffer[bufferIndex++] = currentChar;
                         buffer[bufferIndex++] = nextChar;
-                        natom++;
-                        break;
-                    case '`': // NOTE 直到下一个'`'符号，中间的所有符号当做一个整体处理，直接写入
-                        if (natom > 1)
-                        {
-                            natom--;
-                            buffer[bufferIndex++] = ConcatenationOperator;
-                        }
-                        do
-                        {
-                            buffer[bufferIndex++] = currentChar;
-                            currentChar = regex[++currentIndex];
-                        } while (currentChar != '`');
-                        buffer[bufferIndex++] = currentChar;
                         natom++;
                         break;
                     case '(':
@@ -221,17 +273,6 @@ namespace Compiler
                         line = new Line { StartState = start, Symbol = nextChar, EndState = end };
                         nfa.AddLine(line);
                         fragmentStack.Push(new Fragment() { StartState = start, EndState = end });
-                        break;
-                    case '`': // NOTE 直到下一个'`'符号之间的字符，连起来应该是一个词法单元的名字（即递归定义的正则）
-                        StringBuilder stringBuilder = new StringBuilder();
-                        c = postfix[++i];
-                        while (c != '`')
-                        {
-                            stringBuilder.Append(c);
-                            c = postfix[++i];
-                        }
-                        var lexicalUnitName = stringBuilder.ToString();
-                        // TODO 如何进行正则的递归构造
                         break;
                     case ConcatenationOperator:
                         fragment2 = fragmentStack.Pop();
