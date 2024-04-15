@@ -6,7 +6,14 @@ namespace Compiler
     {
         static void Main(string[] args)
         {
-            Test4();
+            SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(null, new List<SyntaxLine>() 
+            {
+                //SyntaxReader.Read("S:S a|A b | A c"),
+                //SyntaxReader.Read("A:A c|S d"),
+                //SyntaxReader.Read("S:i E t S| i E t S e S | a"),
+                //SyntaxReader.Read("S:i E t S e S| i E t S | a"),
+            });
+            syntaxAnalyzer.Execute();
         }
 
         /// <summary>
