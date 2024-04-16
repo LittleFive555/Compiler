@@ -20,7 +20,7 @@
                     continue;
 
                 string[] symbols = trimed.Split(' ');
-                Production production = new Production();
+                Production production = new Production(result.Name);
                 foreach (var symbol in symbols)
                 {
                     if (string.IsNullOrEmpty(symbol))

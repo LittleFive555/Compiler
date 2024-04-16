@@ -100,7 +100,7 @@ namespace Compiler
                             List<Production> newProductions2 = syntaxLinesList[i].Productions;
                             foreach (var production2 in syntaxLinesList[j].Productions)
                             {
-                                Production newProduction = new Production();
+                                Production newProduction = new Production(syntaxLinesList[i].Name);
                                 newProduction.Symbols.AddRange(production2.Symbols);
                                 for (int k = 1; k < production.Symbols.Count; k++)
                                     newProduction.Symbols.Add(production.Symbols[k]);
@@ -125,7 +125,7 @@ namespace Compiler
                     {
                         haveLeftRecursion = true;
                         // 构建左递归表达式的替代表达式
-                        Production production1 = new Production();
+                        Production production1 = new Production(newSyntaxLine.Name);
                         for (int j = 1; j < production.Symbols.Count; j++)
                             production1.Symbols.Add(production.Symbols[j]);
                         production1.Symbols.Add(newSyntaxLine.Name);
@@ -140,13 +140,16 @@ namespace Compiler
                 if (haveLeftRecursion) // 只有存在左递归时，才对当前文法进行修改
                 {
                     // 给生成的新文法添加空表达式，并收集生成的新文法
-                    newSyntaxLine.Productions.Add(new Production() { Symbols = new List<string>() { Helpers.EmptyOperator.ToString() } });
+                    newSyntaxLine.Productions.Add(new Production(newSyntaxLine.Name) 
+                    { 
+                        Symbols = new List<string>() { Helpers.EmptyOperator.ToString() }
+                    });
                     newSyntaxLines.Add(newSyntaxLine);
                     // 给当前修改的文法赋予新的表达式组
                     List<Production> eliminated = new List<Production>();
                     foreach (var aa in notLeftRecursionProductions)
                     {
-                        Production newProduction = new Production();
+                        Production newProduction = new Production(syntaxLinesList[i].Name);
                         newProduction.Symbols.AddRange(aa.Symbols);
                         newProduction.Symbols.Add(newSyntaxLine.Name);
                         eliminated.Add(newProduction);
@@ -159,6 +162,7 @@ namespace Compiler
                 AddNewSyntaxLine(newSyntaxLine);
         }
 
+        #region 提取左公因子部分
         /// <summary>
         /// 提取左公因子
         /// </summary>
@@ -187,10 +191,10 @@ namespace Compiler
                             toRemoveProductions.Add(toRemove);
 
                             if (leftCommonFactor.Count == toRemove.Symbols.Count)
-                                newProductionsForNew.Add(new Production() { Symbols = new List<string>() { Helpers.EmptyOperator.ToString() } });
+                                newProductionsForNew.Add(new Production(newSyntaxLine.Name) { Symbols = new List<string>() { Helpers.EmptyOperator.ToString() } });
                             else
                             {
-                                Production newProduction = new Production();
+                                Production newProduction = new Production(newSyntaxLine.Name);
                                 for (int j = leftCommonFactor.Count; j < toRemove.Symbols.Count; j++)
                                     newProduction.Symbols.Add(toRemove.Symbols[j]);
                                 newProductionsForNew.Add(newProduction);
@@ -200,7 +204,7 @@ namespace Compiler
                         // 对旧的文法移除包含左公因子的表达式，并添加新替换的表达式
                         foreach (var toRemove in toRemoveProductions)
                             syntaxLine.Productions.Remove(toRemove);
-                        Production newProductionForOld = new Production();
+                        Production newProductionForOld = new Production(syntaxLine.Name);
                         newProductionForOld.Symbols.AddRange(leftCommonFactor);
                         newProductionForOld.Symbols.Add(newSyntaxLine.Name);
                         syntaxLine.Productions.Add(newProductionForOld);
@@ -212,11 +216,6 @@ namespace Compiler
             }
             foreach (var newSyntaxLine in newSyntaxLines)
                 AddNewSyntaxLine(newSyntaxLine);
-        }
-
-        private void AddNewSyntaxLine(SyntaxLine newSyntaxLine)
-        {
-            m_syntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
         }
 
         private void GetLeftCommonFactorRecursively(SyntaxLine syntaxLine, int i, ref List<int> indexesHaveLeftCommonFactor, ref List<string> leftCommonFactor)
@@ -261,6 +260,14 @@ namespace Compiler
             }
             return true;
         }
+        #endregion
+
+        private void AddNewSyntaxLine(SyntaxLine newSyntaxLine)
+        {
+            m_syntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
+        }
+
+        #region 求first集部分
 
         /// <summary>
         /// 求First集
@@ -337,6 +344,10 @@ namespace Compiler
             return !m_syntaxLines.Keys.Contains(symbol);
         }
 
+        #endregion
+
+        #region 求Follow集部分
+
         /// <summary>
         /// 求Follow集
         /// </summary>
@@ -389,5 +400,8 @@ namespace Compiler
                 }
             }
         }
+
+        #endregion
+
     }
 }

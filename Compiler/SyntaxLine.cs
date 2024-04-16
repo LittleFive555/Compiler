@@ -31,7 +31,14 @@ namespace Compiler
 
     public class Production
     {
+        public string Belonged;
+
         public List<string> Symbols = new List<string>();
+
+        public Production(string belonged)
+        {
+            Belonged = belonged;
+        }
 
         public override string ToString()
         {
