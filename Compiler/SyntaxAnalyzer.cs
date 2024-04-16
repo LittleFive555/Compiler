@@ -1,11 +1,13 @@
-﻿namespace Compiler
+﻿using System.Text;
+
+namespace Compiler
 {
     public class SyntaxAnalyzer
     {
-        private List<Token> m_tokens;
-        private List<SyntaxLine> m_syntaxLines;
+        private readonly List<Token> m_tokens;
+        private readonly Dictionary<string, SyntaxLine> m_syntaxLines;
 
-        public SyntaxAnalyzer(List<Token> tokens, List<SyntaxLine> syntaxLines)
+        public SyntaxAnalyzer(List<Token> tokens, Dictionary<string, SyntaxLine> syntaxLines)
         {
             m_tokens = tokens;
             m_syntaxLines = syntaxLines;
@@ -18,9 +20,24 @@
             EliminateLeftRecursion();
             ExtractLeftCommonFactor();
 
-            foreach (var syntaxLine in m_syntaxLines)
+            foreach (var syntaxLine in m_syntaxLines.Values)
             {
                 Console.WriteLine(syntaxLine.ToString());
+            }
+
+            var firstSet = FirstSet();
+            Console.WriteLine("FirstSet:");
+            foreach (var set in firstSet)
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(set.Key);
+                stringBuilder.Append(": ");
+                foreach (var symbol in set.Value)
+                {
+                    stringBuilder.Append(symbol.ToString());
+                    stringBuilder.Append(" ");
+                }
+                Console.WriteLine(stringBuilder.ToString());
             }
         }
 
@@ -45,22 +62,23 @@
         /// </summary>
         private void EliminateLeftRecursion()
         {
-            // TODO 是否需要对m_syntaxLines排序？理论上是后面的文法表达式中会使用到前面的文法，前面的文法表达式中不使用后面的文法
+            // TODO 是否需要对syntaxLinesList排序？理论上是后面的文法表达式中会使用到前面的文法，前面的文法表达式中不使用后面的文法
             List<SyntaxLine> newSyntaxLines = new List<SyntaxLine>();
-            for (int i = 0; i < m_syntaxLines.Count; i++)
+            var syntaxLinesList = m_syntaxLines.Values.ToList();
+            for (int i = 0; i < syntaxLinesList.Count; i++)
             {
                 Dictionary<Production, List<Production>> productionsToReplace = new Dictionary<Production, List<Production>>();
                 for (int j = 0; j < i; j++)
                 {
                     // 将每个形如Ai->AjY的产生式替换为产生式组Ai->X1Y|X2Y|...|XkY，
                     // 其中Aj->X1|X2|...|Xk是所有的Aj产生式
-                    foreach (var production in m_syntaxLines[i].Productions)
+                    foreach (var production in syntaxLinesList[i].Productions)
                     {
-                        if (production.Symbols[0] == m_syntaxLines[j].Name)
+                        if (production.Symbols[0] == syntaxLinesList[j].Name)
                         {
                             productionsToReplace.Add(production, new List<Production>());
-                            List<Production> newProductions2 = m_syntaxLines[i].Productions;
-                            foreach (var production2 in m_syntaxLines[j].Productions)
+                            List<Production> newProductions2 = syntaxLinesList[i].Productions;
+                            foreach (var production2 in syntaxLinesList[j].Productions)
                             {
                                 Production newProduction = new Production();
                                 newProduction.Symbols.AddRange(production2.Symbols);
@@ -73,17 +91,17 @@
                 }
                 foreach (var toReplace in productionsToReplace)
                 {
-                    m_syntaxLines[i].Productions.Remove(toReplace.Key);
-                    m_syntaxLines[i].Productions.AddRange(toReplace.Value);
+                    syntaxLinesList[i].Productions.Remove(toReplace.Key);
+                    syntaxLinesList[i].Productions.AddRange(toReplace.Value);
                 }
                 // 消除新产生式的直接左递归
                 SyntaxLine newSyntaxLine = new SyntaxLine();
-                newSyntaxLine.Name = string.Format("{0}'", m_syntaxLines[i].Name);
+                newSyntaxLine.Name = string.Format("{0}'", syntaxLinesList[i].Name);
                 List<Production> notLeftRecursionProductions = new List<Production>();
                 bool haveLeftRecursion = false;
-                foreach (var production in m_syntaxLines[i].Productions)
+                foreach (var production in syntaxLinesList[i].Productions)
                 {
-                    if (production.Symbols[0] == m_syntaxLines[i].Name)
+                    if (production.Symbols[0] == syntaxLinesList[i].Name)
                     {
                         haveLeftRecursion = true;
                         // 构建左递归表达式的替代表达式
@@ -113,12 +131,12 @@
                         newProduction.Symbols.Add(newSyntaxLine.Name);
                         eliminated.Add(newProduction);
                     }
-                    m_syntaxLines[i].Productions = eliminated;
+                    syntaxLinesList[i].Productions = eliminated;
                 }
             }
             // 将新产生的文法加入到文法列表中
             foreach (var newSyntaxLine in newSyntaxLines)
-                m_syntaxLines.Add(newSyntaxLine);
+                AddNewSyntaxLine(newSyntaxLine);
         }
 
         /// <summary>
@@ -127,7 +145,7 @@
         private void ExtractLeftCommonFactor()
         {
             List<SyntaxLine> newSyntaxLines = new List<SyntaxLine>();
-            foreach (var syntaxLine in m_syntaxLines)
+            foreach (var syntaxLine in m_syntaxLines.Values)
             {
                 for (int i = 0; i < syntaxLine.Productions.Count; i++)
                 {
@@ -173,7 +191,12 @@
                 }
             }
             foreach (var newSyntaxLine in newSyntaxLines)
-                m_syntaxLines.Add(newSyntaxLine);
+                AddNewSyntaxLine(newSyntaxLine);
+        }
+
+        private void AddNewSyntaxLine(SyntaxLine newSyntaxLine)
+        {
+            m_syntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
         }
 
         private void Func1(SyntaxLine syntaxLine, int i, ref List<int> indexesHaveLeftCommonFactor, ref List<string> leftCommonFactor)
@@ -217,6 +240,77 @@
                     return false;
             }
             return true;
+        }
+
+        private Dictionary<string, HashSet<string>> FirstSet()
+        {
+            Dictionary<string, HashSet<string>> firstSet = new Dictionary<string, HashSet<string>>();
+            // 收集文法中所有符号
+            HashSet<string> allSymbols = new HashSet<string>();
+            foreach (var syntaxLine in m_syntaxLines.Values)
+            {
+                if (!allSymbols.Contains(syntaxLine.Name))
+                    allSymbols.Add(syntaxLine.Name);
+                foreach (var production in syntaxLine.Productions)
+                {
+                    foreach (var symbol in production.Symbols)
+                    {
+                        if (!allSymbols.Contains(symbol))
+                            allSymbols.Add(symbol);
+                    }
+                }
+            }
+
+            // TODO 在此之前应该除去文法中的环
+            foreach (var symbol in allSymbols)
+                SymbolFirstSet(firstSet, symbol);
+
+            return firstSet;
+        }
+
+        private void SymbolFirstSet(Dictionary<string, HashSet<string>> firstSet, string symbol)
+        {
+            if (firstSet.ContainsKey(symbol))
+                return;
+
+            if (IsTerminalSymbol(symbol)) // 如果是终结符号
+            {
+                firstSet.Add(symbol, new HashSet<string> { symbol }); // 其first集是自己
+            }
+            else // 如果是非终结符号
+            {
+                firstSet.Add(symbol, new HashSet<string>());
+                var syntaxLine = m_syntaxLines[symbol];
+                foreach (var production in syntaxLine.Productions)
+                {
+                    bool haveEmptyProduction = true;
+                    if (production.Symbols.Count == 1 && production.Symbols[0].Equals(Helpers.EmptyOperator.ToString()))
+                    {
+                        firstSet[symbol].Add(Helpers.EmptyOperator.ToString());
+                    }
+                    else
+                    {
+                        foreach (var productionSymbol in production.Symbols)
+                        {
+                            if (!firstSet.ContainsKey(productionSymbol))
+                                SymbolFirstSet(firstSet, productionSymbol);
+
+                            if (haveEmptyProduction)
+                                firstSet[symbol].UnionWith(firstSet[productionSymbol]);
+
+                            if (!firstSet[productionSymbol].Contains(Helpers.EmptyOperator.ToString()))
+                                haveEmptyProduction = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool IsTerminalSymbol(string symbol)
+        {
+            // 如果是文法中左侧出现的符号，则是非终结符
+            // 因为任何一个非终结符，都必须在文法左侧定义，而不能只出现在文法右侧
+            return !m_syntaxLines.Keys.Contains(symbol);
         }
     }
 }

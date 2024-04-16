@@ -34,9 +34,9 @@
             return result;
         }
 
-        public static List<SyntaxLine> ReadFromFile(string fileName)
+        public static Dictionary<string, SyntaxLine> ReadFromFile(string fileName)
         {
-            List<SyntaxLine> result = new List<SyntaxLine>();
+            Dictionary<string, SyntaxLine> result = new Dictionary<string, SyntaxLine>();
             using (StreamReader streamReader = new StreamReader(fileName))
             {
                 while (true)
@@ -45,10 +45,10 @@
                     if (lineContent == null)
                         break;
 
-                    var grammerLine = Read(lineContent);
-                    if (grammerLine == null)
+                    var syntaxLine = Read(lineContent);
+                    if (syntaxLine == null)
                         continue;
-                    result.Add(grammerLine);
+                    result.Add(syntaxLine.Name, syntaxLine);
                 }
             }
             return result;
