@@ -6,8 +6,21 @@ namespace Compiler
     {
         static void Main(string[] args)
         {
+            List<LexicalRegex> allLexicalRegex = LexicalRegexLoader.ReadRegexFromMultiFiles(
+                "E:\\SourceCode\\Compiler\\File\\ReservedWord.txt",
+                "E:\\SourceCode\\Compiler\\File\\Symbols.txt",
+                "E:\\SourceCode\\Compiler\\File\\LexerDefine.txt");
+
+            FA nfa = Regex2NFA.Execute(allLexicalRegex.ToArray());
+            var dfa = NFA2DFA.Execute(nfa);
             var syntaxLines = SyntaxReader.ReadFromFile("E:\\SourceCode\\Compiler\\File\\SyntaxDefine.txt");
             SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(syntaxLines);
+
+            string input = "1+3*5";
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(input));
+            var tokens = Lexical.Read(stream, dfa);
+
+            syntaxAnalyzer.Execute(tokens);
         }
 
         /// <summary>
@@ -70,21 +83,6 @@ namespace Compiler
                 RegexContent = "\\|\\|",
                 Priority = 2
             });
-            Console.WriteLine("NFA:");
-            Console.WriteLine(nfa);
-            var dfa = NFA2DFA.Execute(nfa);
-            Console.WriteLine("DFA:");
-            Console.WriteLine(dfa);
-        }
-
-        private static void Test4()
-        {
-            List<LexicalRegex> allLexicalRegex = LexicalRegexLoader.ReadRegexFromMultiFiles(
-                "E:\\SourceCode\\Compiler\\File\\ReservedWord.txt",
-                "E:\\SourceCode\\Compiler\\File\\Symbols.txt",
-                "E:\\SourceCode\\Compiler\\File\\LexerDefine.txt");
-
-            FA nfa = Regex2NFA.Execute(allLexicalRegex.ToArray());
             Console.WriteLine("NFA:");
             Console.WriteLine(nfa);
             var dfa = NFA2DFA.Execute(nfa);

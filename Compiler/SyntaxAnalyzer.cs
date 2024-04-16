@@ -5,6 +5,7 @@ namespace Compiler
     public class SyntaxAnalyzer
     {
         private readonly Dictionary<string, SyntaxLine> m_syntaxLines;
+        private Dictionary<string, Dictionary<string, List<Production>>> m_predictiveAnylisisTable;
 
         private const string StartSymbol = "S";
         private const string EndSymbol = "$";
@@ -19,7 +20,69 @@ namespace Compiler
 
         public void Execute(List<Token> tokens)
         {
+            Stack<string> stack = new Stack<string>();
+            stack.Push(EndSymbol);
+            stack.Push(StartSymbol);
 
+            int index = 0;
+            string currentSymbol = stack.Peek();
+            int counter = 0;
+            while (currentSymbol != EndSymbol)
+            {
+                //StringBuilder stringBuilder = new StringBuilder();
+                //stringBuilder.Append(counter++);
+                //stringBuilder.Append(" : ");
+                //for (int i = 0; i < index && i < tokens.Count; i++)
+                //    stringBuilder.Append(tokens[i].Content);
+                //stringBuilder.Append("\t\t\t");
+                //var stackList = stack.ToArray();
+                //for (int i = 0; i < stackList.Length; i++)
+                //    stringBuilder.Append(stackList[i]);
+                //Console.WriteLine(stringBuilder.ToString());
+
+                string currentTokenName = index < tokens.Count ? tokens[index].LexicalUnit.Name : EndSymbol;
+                if (currentSymbol.Equals(currentTokenName))
+                {
+                    stack.Pop();
+                    index++;
+                }
+                else if (IsTerminalSymbol(currentSymbol))
+                {
+                    // TODO add error info, try fix and continue
+                    throw new Exception();
+                }
+                else if (!m_predictiveAnylisisTable[currentSymbol].ContainsKey(currentTokenName))
+                {
+                    // TODO add error info, try fix and continue
+                    throw new Exception();
+                }
+                else
+                {
+                    var syntaxProductions = m_predictiveAnylisisTable[currentSymbol][currentTokenName];
+                    if (syntaxProductions.Count > 2)
+                        throw new Exception();
+                    Production production;
+                    if (syntaxProductions.Count == 1)
+                        production = syntaxProductions[0];
+                    else
+                    {
+                        if (syntaxProductions[0].Symbols.Count == 1 && syntaxProductions[0].Symbols[0].Equals(Helpers.EmptyOperator.ToString()))
+                            production = syntaxProductions[1];
+                        else
+                            production = syntaxProductions[0];
+                    }
+
+                    if (production.Symbols.Count == 1 && production.Symbols[0].Equals(Helpers.EmptyOperator.ToString()))
+                        stack.Pop();
+                    else
+                    {
+                        stack.Pop();
+                        for (int i = production.Symbols.Count - 1; i >= 0; i--)
+                            stack.Push(production.Symbols[i]);
+                    }
+                }
+                currentSymbol = stack.Peek();
+            }
         }
 
         private void Initialize()
@@ -29,48 +92,48 @@ namespace Compiler
             EliminateLeftRecursion();
             ExtractLeftCommonFactor();
 
-            foreach (var syntaxLine in m_syntaxLines.Values)
-            {
-                Console.WriteLine(syntaxLine.ToString());
-            }
+            //foreach (var syntaxLine in m_syntaxLines.Values)
+            //{
+            //    Console.WriteLine(syntaxLine.ToString());
+            //}
 
             var firstSet = FirstSet();
-            Console.WriteLine("FirstSet:");
-            foreach (var set in firstSet)
-            {
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.Append(set.Key);
-                stringBuilder.Append(": ");
-                foreach (var symbol in set.Value)
-                {
-                    stringBuilder.Append(symbol.ToString());
-                    stringBuilder.Append(" ");
-                }
-                Console.WriteLine(stringBuilder.ToString());
-            }
+            //Console.WriteLine("FirstSet:");
+            //foreach (var set in firstSet)
+            //{
+            //    StringBuilder stringBuilder = new StringBuilder();
+            //    stringBuilder.Append(set.Key);
+            //    stringBuilder.Append(": ");
+            //    foreach (var symbol in set.Value)
+            //    {
+            //        stringBuilder.Append(symbol.ToString());
+            //        stringBuilder.Append(" ");
+            //    }
+            //    Console.WriteLine(stringBuilder.ToString());
+            //}
 
             var followSet = FollowSet(firstSet);
-            Console.WriteLine("FollowSet:");
-            foreach (var set in followSet)
-            {
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.Append(set.Key);
-                stringBuilder.Append(": ");
-                foreach (var symbol in set.Value)
-                {
-                    stringBuilder.Append(symbol.ToString());
-                    stringBuilder.Append(" ");
-                }
-                Console.WriteLine(stringBuilder.ToString());
-            }
+            //Console.WriteLine("FollowSet:");
+            //foreach (var set in followSet)
+            //{
+            //    StringBuilder stringBuilder = new StringBuilder();
+            //    stringBuilder.Append(set.Key);
+            //    stringBuilder.Append(": ");
+            //    foreach (var symbol in set.Value)
+            //    {
+            //        stringBuilder.Append(symbol.ToString());
+            //        stringBuilder.Append(" ");
+            //    }
+            //    Console.WriteLine(stringBuilder.ToString());
+            //}
 
             if (!IsValidLL1())
             {
                 throw new Exception();
             }
 
-            var table = PredictiveAnalysisTable(firstSet, followSet);
-            PrintPredictiveAnalysisTable(table);
+            m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
+            //PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
         }
 
         /// <summary>
