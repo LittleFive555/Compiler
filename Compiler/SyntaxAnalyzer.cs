@@ -4,21 +4,25 @@ namespace Compiler
 {
     public class SyntaxAnalyzer
     {
-        private readonly List<Token> m_tokens;
         private readonly Dictionary<string, SyntaxLine> m_syntaxLines;
 
         private const string StartSymbol = "S";
         private const string EndSymbol = "$";
 
-        public SyntaxAnalyzer(List<Token> tokens, Dictionary<string, SyntaxLine> syntaxLines)
+        public SyntaxAnalyzer(Dictionary<string, SyntaxLine> syntaxLines)
         {
-            m_tokens = tokens;
             m_syntaxLines = syntaxLines;
             if (!m_syntaxLines.ContainsKey(StartSymbol))
                 throw new Exception("没有文法开始符号 S ，请检查是否有产生式左侧命名为 S 的文法");
+            Initialize();
         }
 
-        public void Execute()
+        public void Execute(List<Token> tokens)
+        {
+
+        }
+
+        private void Initialize()
         {
             EliminateEmptyProduction();
             EliminateCircle();
@@ -59,6 +63,14 @@ namespace Compiler
                 }
                 Console.WriteLine(stringBuilder.ToString());
             }
+
+            if (!IsValidLL1())
+            {
+                throw new Exception();
+            }
+
+            var table = PredictiveAnalysisTable(firstSet, followSet);
+            PrintPredictiveAnalysisTable(table);
         }
 
         /// <summary>
@@ -304,6 +316,9 @@ namespace Compiler
             if (firstSet.ContainsKey(symbol))
                 return;
 
+            if (symbol.Equals(Helpers.EmptyOperator.ToString()))
+                return;
+
             if (IsTerminalSymbol(symbol)) // 如果是终结符号
             {
                 firstSet.Add(symbol, new HashSet<string> { symbol }); // 其first集是自己
@@ -341,7 +356,9 @@ namespace Compiler
         {
             // 如果是文法中左侧出现的符号，则是非终结符
             // 因为任何一个非终结符，都必须在文法左侧定义，而不能只出现在文法右侧
-            return !m_syntaxLines.Keys.Contains(symbol);
+            return !m_syntaxLines.Keys.Contains(symbol) 
+                && !symbol.Equals(Helpers.EmptyOperator.ToString())
+                && !symbol.Equals(EndSymbol);
         }
 
         #endregion
@@ -403,5 +420,85 @@ namespace Compiler
 
         #endregion
 
+        /// <summary>
+        /// 判断该文法是否是LL(1)的
+        /// </summary>
+        /// <returns></returns>
+        private bool IsValidLL1()
+        {
+            // TODO
+            return true;
+        }
+
+        private Dictionary<string, Dictionary<string, List<Production>>> PredictiveAnalysisTable(Dictionary<string, HashSet<string>> firstSet, Dictionary<string, HashSet<string>> followSet)
+        {
+            Dictionary<string, Dictionary<string, List<Production>>> table = new Dictionary<string, Dictionary<string, List<Production>>>();
+
+            foreach (var syntaxLine in m_syntaxLines.Values)
+            {
+                var currentRow = new Dictionary<string, List<Production>>();
+                table.Add(syntaxLine.Name, currentRow);
+                foreach (var production in syntaxLine.Productions)
+                {
+                    var firstSymbol = production.Symbols[0];
+                    HashSet<string> currentProductionFirst;
+                    if (firstSymbol.Equals(Helpers.EmptyOperator.ToString()))
+                        currentProductionFirst = new HashSet<string>() { Helpers.EmptyOperator.ToString() };
+                    else
+                        currentProductionFirst = firstSet[firstSymbol];
+                    foreach (var first in currentProductionFirst)
+                    {
+                        if (IsTerminalSymbol(first))
+                            AddToCell(currentRow, first, production);
+                    }
+                    if (currentProductionFirst.Contains(Helpers.EmptyOperator.ToString()))
+                    {
+                        var currentSyntaxLineFollow = followSet[syntaxLine.Name];
+                        foreach (var symbol in currentSyntaxLineFollow)
+                        {
+                            if (IsTerminalSymbol(symbol))
+                                AddToCell(currentRow, symbol, production);
+                        }
+                        if (currentSyntaxLineFollow.Contains(EndSymbol))
+                            AddToCell(currentRow, EndSymbol, production);
+                    }
+                }
+            }
+
+            return table;
+        }
+
+        private static void AddToCell(Dictionary<string, List<Production>> currentRow, string symbol, Production production)
+        {
+            if (!currentRow.ContainsKey(symbol))
+                currentRow.Add(symbol, new List<Production>() { production });
+            else
+                currentRow[symbol].Add(production);
+        }
+
+        private void PrintPredictiveAnalysisTable(Dictionary<string, Dictionary<string, List<Production>>> table)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (var pair1 in table)
+            {
+                stringBuilder.AppendLine(pair1.Key);
+                foreach (var pair2 in pair1.Value)
+                {
+                    for (int i = 0; i < pair1.Key.Length; i++)
+                        stringBuilder.Append(" ");
+                    stringBuilder.Append(pair2.Key);
+                    stringBuilder.AppendLine();
+                    for (int i = 0; i < pair2.Value.Count; i++)
+                    {
+                        for (int j = 0; j < pair1.Key.Length + pair2.Key.Length; j++)
+                            stringBuilder.Append(" ");
+                        stringBuilder.Append(pair2.Value[i]);
+                        stringBuilder.AppendLine();
+                    }
+                }
+                stringBuilder.AppendLine();
+            }
+            Console.WriteLine(stringBuilder.ToString());
+        }
     }
 }

@@ -1,3 +1,4 @@
-S:MathE1
-MathE1: MathE2 Plus MathE2 | MathE2 Minus MathE2
-MathE2: Number Multiply Number | Number Divide Number  | Number
+S:Math1
+MathE1: MathE2 Plus MathE2 | MathE2 Minus MathE2 | MathE2 
+MathE2: Factor Multiply Factor | Factor Divide Factor | Factor
+Factor: Identifier | Number | LeftPar MathE1 RightPar

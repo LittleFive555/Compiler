@@ -7,8 +7,7 @@ namespace Compiler
         static void Main(string[] args)
         {
             var syntaxLines = SyntaxReader.ReadFromFile("E:\\SourceCode\\Compiler\\File\\SyntaxDefine.txt");
-            SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(null, syntaxLines);
-            syntaxAnalyzer.Execute();
+            SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(syntaxLines);
         }
 
         /// <summary>
