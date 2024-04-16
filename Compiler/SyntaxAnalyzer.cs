@@ -172,7 +172,7 @@ namespace Compiler
                     List<int> indexesHaveLeftCommonFactor = new List<int>();
                     indexesHaveLeftCommonFactor.Add(i);
                     List<string> leftCommonFactor = new List<string>();
-                    Func1(syntaxLine, i, ref indexesHaveLeftCommonFactor, ref leftCommonFactor);
+                    GetLeftCommonFactorRecursively(syntaxLine, i, ref indexesHaveLeftCommonFactor, ref leftCommonFactor);
                     if (indexesHaveLeftCommonFactor.Count > 1)
                     {
                         SyntaxLine newSyntaxLine = new SyntaxLine();
@@ -219,7 +219,7 @@ namespace Compiler
             m_syntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
         }
 
-        private void Func1(SyntaxLine syntaxLine, int i, ref List<int> indexesHaveLeftCommonFactor, ref List<string> leftCommonFactor)
+        private void GetLeftCommonFactorRecursively(SyntaxLine syntaxLine, int i, ref List<int> indexesHaveLeftCommonFactor, ref List<string> leftCommonFactor)
         {
             List<int> indexesOnStart = new List<int>(indexesHaveLeftCommonFactor);
             if (leftCommonFactor.Count == syntaxLine.Productions[i].Symbols.Count) // 如果左公因子个数已经达到当前的符号个数，则停止
@@ -248,7 +248,7 @@ namespace Compiler
             if (indexesHaveLeftCommonFactor.Count > 1)
             {
                 // 尝试左公因子+1，如果还有多个表达式，继续+1
-                Func1(syntaxLine, i, ref indexesHaveLeftCommonFactor, ref leftCommonFactor);
+                GetLeftCommonFactorRecursively(syntaxLine, i, ref indexesHaveLeftCommonFactor, ref leftCommonFactor);
             }
         }
 
