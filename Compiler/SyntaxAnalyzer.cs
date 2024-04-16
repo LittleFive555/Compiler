@@ -263,12 +263,12 @@ namespace Compiler
 
             // TODO 在此之前应该除去文法中的环
             foreach (var symbol in allSymbols)
-                SymbolFirstSet(firstSet, symbol);
+                SymbolFirstSetRecursively(firstSet, symbol);
 
             return firstSet;
         }
 
-        private void SymbolFirstSet(Dictionary<string, HashSet<string>> firstSet, string symbol)
+        private void SymbolFirstSetRecursively(Dictionary<string, HashSet<string>> firstSet, string symbol)
         {
             if (firstSet.ContainsKey(symbol))
                 return;
@@ -293,7 +293,7 @@ namespace Compiler
                         foreach (var productionSymbol in production.Symbols)
                         {
                             if (!firstSet.ContainsKey(productionSymbol))
-                                SymbolFirstSet(firstSet, productionSymbol);
+                                SymbolFirstSetRecursively(firstSet, productionSymbol);
 
                             if (haveEmptyProduction)
                                 firstSet[symbol].UnionWith(firstSet[productionSymbol]);
