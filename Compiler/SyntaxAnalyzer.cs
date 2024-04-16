@@ -7,10 +7,15 @@ namespace Compiler
         private readonly List<Token> m_tokens;
         private readonly Dictionary<string, SyntaxLine> m_syntaxLines;
 
+        private const string StartSymbol = "S";
+        private const string EndSymbol = "$";
+
         public SyntaxAnalyzer(List<Token> tokens, Dictionary<string, SyntaxLine> syntaxLines)
         {
             m_tokens = tokens;
             m_syntaxLines = syntaxLines;
+            if (!m_syntaxLines.ContainsKey(StartSymbol))
+                throw new Exception("没有文法开始符号 S ，请检查是否有产生式左侧命名为 S 的文法");
         }
 
         public void Execute()
@@ -28,6 +33,21 @@ namespace Compiler
             var firstSet = FirstSet();
             Console.WriteLine("FirstSet:");
             foreach (var set in firstSet)
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(set.Key);
+                stringBuilder.Append(": ");
+                foreach (var symbol in set.Value)
+                {
+                    stringBuilder.Append(symbol.ToString());
+                    stringBuilder.Append(" ");
+                }
+                Console.WriteLine(stringBuilder.ToString());
+            }
+
+            var followSet = FollowSet(firstSet);
+            Console.WriteLine("FollowSet:");
+            foreach (var set in followSet)
             {
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.Append(set.Key);
@@ -242,6 +262,10 @@ namespace Compiler
             return true;
         }
 
+        /// <summary>
+        /// 求First集
+        /// </summary>
+        /// <returns></returns>
         private Dictionary<string, HashSet<string>> FirstSet()
         {
             Dictionary<string, HashSet<string>> firstSet = new Dictionary<string, HashSet<string>>();
@@ -311,6 +335,59 @@ namespace Compiler
             // 如果是文法中左侧出现的符号，则是非终结符
             // 因为任何一个非终结符，都必须在文法左侧定义，而不能只出现在文法右侧
             return !m_syntaxLines.Keys.Contains(symbol);
+        }
+
+        /// <summary>
+        /// 求Follow集
+        /// </summary>
+        /// <returns></returns>
+        private Dictionary<string, HashSet<string>> FollowSet(Dictionary<string, HashSet<string>> firstSet)
+        {
+            Dictionary<string, HashSet<string>> followSet = new Dictionary<string, HashSet<string>>();
+
+            foreach (var nonTernimalSymbol in m_syntaxLines.Keys)
+                SymbolFollowSetRecursively(firstSet, followSet, nonTernimalSymbol);
+
+            return followSet;
+        }
+
+        private void SymbolFollowSetRecursively(Dictionary<string, HashSet<string>> firstSet, Dictionary<string, HashSet<string>> followSet, string nonTernimalSymbol)
+        {
+            if (followSet.ContainsKey(nonTernimalSymbol))
+                return;
+
+            if (nonTernimalSymbol.Equals(StartSymbol))
+                followSet.Add(nonTernimalSymbol, new HashSet<string>() { EndSymbol });
+            else
+            {
+                followSet.Add(nonTernimalSymbol, new HashSet<string>());
+                foreach (var syntaxLine in m_syntaxLines.Values)
+                {
+                    foreach (var production in syntaxLine.Productions)
+                    {
+                        for (int i = 0; i < production.Symbols.Count; i++)
+                        {
+                            var currentSymbol = production.Symbols[i];
+                            if (currentSymbol.Equals(nonTernimalSymbol) && i + 1 < production.Symbols.Count)
+                            {
+                                var nextSymbol = production.Symbols[i + 1];
+                                followSet[nonTernimalSymbol].UnionWith(firstSet[nextSymbol]);
+                                if (followSet[nonTernimalSymbol].Contains(Helpers.EmptyOperator.ToString()))
+                                    followSet[nonTernimalSymbol].Remove(Helpers.EmptyOperator.ToString());
+                            }
+                            if ((currentSymbol.Equals(nonTernimalSymbol) && i + 1 == production.Symbols.Count)
+                                || (i + 1 < production.Symbols.Count && firstSet[production.Symbols[i + 1]].Contains(Helpers.EmptyOperator.ToString())))
+                            {
+                                if (followSet.ContainsKey(syntaxLine.Name))
+                                {
+                                    SymbolFollowSetRecursively(firstSet, followSet, syntaxLine.Name);
+                                    followSet[nonTernimalSymbol].UnionWith(followSet[syntaxLine.Name]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
