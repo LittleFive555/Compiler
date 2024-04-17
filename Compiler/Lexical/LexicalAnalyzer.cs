@@ -2,7 +2,7 @@
 
 namespace Compiler.Lexical
 {
-    public class Lexical
+    public class LexicalAnalyzer
     {
         public static List<Token> Read(Stream stream, FA dfa)
         {

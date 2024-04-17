@@ -22,7 +22,7 @@ namespace Compiler
 
             string input = "var a = 3";
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(input));
-            var tokens = Lexical.Read(stream, dfa);
+            var tokens = LexicalAnalyzer.Read(stream, dfa);
             syntaxAnalyzer.Execute(tokens);
         }
 
@@ -70,7 +70,7 @@ namespace Compiler
 
             string input = "1  2    3 42\r\n55 9";
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(input));
-            var result = Lexical.Read(stream, dfa);
+            var result = LexicalAnalyzer.Read(stream, dfa);
             foreach (var token in result)
                 Console.WriteLine(string.Format("Content: {0}, LexicalUnitName: {1}, TokenLength: {2}", token.Content, token.LexicalUnit.Name, token.Length));
         }
