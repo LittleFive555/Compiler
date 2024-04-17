@@ -1,12 +1,67 @@
-S: LocalAssignValue
+S: MultiStatement
 
-MathE1: MathE1 Plus MathE2 | MathE1 Minus MathE2 | MathE2 
-MathE2: MathE2 Multiply Factor | MathE2 Divide Factor | Factor
-Factor: Expression | LeftPar MathE1 RightPar
+// 语句
+MultiStatement: Statement MultiStatement | Statement | ·
+Statement: Expression | CodeBlock | IfStatement | ForStatement | ForStatement | WhileStatement | ClassDefine | FunctionDefine
+Expression: LocalAssign | AssignValue | FunctionCall
 
-LocalAssignValue: LocalDeclaration Assign ValueList
+Operation1: Operation1 And Operation2 | Operation1 Minus Operation2 | Operation2 
+Operation2: Operation2 InclusiveOr Operation3 | Operation2 Combine Operation3 | Operation2 XOR Operation3 | Operation2 LShift Operation3 | Operation2 RShift Operation3 | Operation3
+Operation3: Operation3 Equal Operation4 | Operation3 NotEqual Operation4 | Operation3 EqualReference Operation4 | Operation3 NotEqualReference Operation4 | Operation3 Greater Operation4 | Operation3 GreaterOrEqual Operation4 | Operation3 Less Operation4 | Operation3 LessOrEqual Operation4 | Operation4
+Operation4: Operation4 Plus Operation5 | Operation4 Minus Operation5 | Operation5
+Operation5: Operation5 Multiply Factor | Operation5 Divide Factor | Operation5 Modulo Factor | Factor 
+Factor: Expression | LeftPar Operation1 RightPar
+
+// 声明和赋值
+LocalAssign: LocalAssignValue | LocalDeclaration
+LocalAssignValue: LocalDeclaration AssignSymbol Expression
 LocalDeclaration: Var IdentifierList
-AssignValue: IdentifierList  Assign ValueList
+AssignValue: IdentifierList AssignSymbol Expression
 IdentifierList: Identifier | IdentifierList Comma Identifier
-ValueList: Expression | ValueList Comma Expression
-Expression: Identifier | Number
+AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign | ModuloAssign | CombineAssign | InclusiveOrAssign | XORAssign | ShrAssign | ShiAssign
+Object: FunctionCall | Number | String | Identifier
+
+// Number（定义完善）
+Number: Long | Double | Minus Long | Minus Double | Negative Long
+
+// 函数
+FunctionDefine : Function Identifier LeftPar IdentifierList RightPar LeftBrace FunctionBlock RightBrace | FunctionDefineWithZeroParams | AnonymousFunctionDefine | FunctionDefineWithoutContent | FunctionDefineWithZeroParamsWithoutContent | AnonymousFunctionDefineWithoutContent
+FunctionDefineWithZeroParams : Function Identifier LeftPar RightPar LeftBrace FunctionBlock RightBrace
+AnonymousFunctionDefine : Function Identifier LeftBrace FunctionBlock RightBrace
+FunctionDefineWithoutContent : Function Identifier LeftPar IdentifierList RightPar LeftBrace RightBrace
+FunctionDefineWithZeroParamsWithoutContent : Function Identifier LeftPar RightPar LeftBrace RightBrace
+AnonymousFunctionDefineWithoutContent : Function Identifier LeftBrace RightBrace
+FunctionBlock : MultiStatement
+
+FunctionCall: Identifier LeftPar IdentifierList RightPar | FunctionCallWithZeroParams
+FunctionCallWithZeroParams: Identifier LeftPar RightPar
+
+MemberCall: MemberByPeriod | MemberByBracket
+// 类
+ClassDefine :
+MemberByPeriod: Identifier Period Identifier | Identifier Period FunctionCall
+
+// 布尔值
+Boolean : True | False | Not Boolean
+
+// 列表
+Array: LeftBracket
+// 字典
+Map: LeftBrace
+MemberByBracket: Identifier LeftBrace Expression RightBrace
+
+// 代码块
+CodeBlock: LeftBrace MultiStatement RightBrace
+// if语句
+IfStatement:
+// for语句
+ForStatement:
+// foreach语句
+ForeachStatement:
+// while语句
+WhileStatement:
+// switch语句
+SwitchStatement:
+// 异常
+
+// 异步

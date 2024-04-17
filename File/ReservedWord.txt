@@ -6,11 +6,11 @@ MacroElif:#elif
 MacroEndif:#endif
 Import:#import
 
-Var:var
+Var:var|let
 
 If:if
 Else:else
-ElseIf:elif
+ElseIf:elif|elseif
 
 For:for
 Foreach:foreach
@@ -29,9 +29,9 @@ Catch:catch
 Throw:throw
 Number:double
 String:string
-Null:null
+Null:null|nil
 Class:class
 Async:async
 Await:await
-True:true
-False:false
+True:true|TRUE|True
+False:false|FALSE|False
