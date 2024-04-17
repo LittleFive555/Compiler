@@ -7,12 +7,18 @@
         public static List<LexicalRegex> ReadRegexFromMultiFiles(params string[] filesPath)
         {
             List<LexicalRegex> allLexicalRegex = new List<LexicalRegex>();
+            allLexicalRegex.Add(new LexicalRegex()
+            {
+                Name = Helpers.WhitespaceName,
+                RegexContent = Helpers.WhitespaceRegex,
+                Priority = Priority++
+            });
             foreach (var filePath in filesPath)
                 allLexicalRegex.AddRange(ReadRegexFromFile(filePath));
             return allLexicalRegex;
         }
 
-        public static List<LexicalRegex> ReadRegexFromFile(string filePath)
+        private static List<LexicalRegex> ReadRegexFromFile(string filePath)
         {
             List<LexicalRegex> allLexicalRegex = new List<LexicalRegex>();
             using (StreamReader streamReader = new StreamReader(filePath))
