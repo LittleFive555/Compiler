@@ -1,4 +1,4 @@
-﻿namespace Compiler
+﻿namespace Compiler.Lexical
 {
     internal static class LexicalRegexLoader
     {

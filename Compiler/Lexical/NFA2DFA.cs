@@ -1,4 +1,4 @@
-﻿namespace Compiler
+﻿namespace Compiler.Lexical
 {
     internal class NFA2DFA
     {

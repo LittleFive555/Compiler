@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace Compiler
+namespace Compiler.Lexical
 {
     public class FA
     {
@@ -89,7 +89,7 @@ namespace Compiler
         {
             if (obj is Line line)
                 return StartState == line.StartState && EndState == line.EndState && Symbol == line.Symbol;
-            else 
+            else
                 return false;
         }
 

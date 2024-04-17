@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Compiler
+namespace Compiler.Lexical
 {
     internal class LexicalRegex
     {
@@ -281,7 +281,7 @@ namespace Compiler
                         end = fragment2.StartState;
                         line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
-                        frag = new Fragment() { StartState = fragment1.StartState, EndState = fragment2.EndState};
+                        frag = new Fragment() { StartState = fragment1.StartState, EndState = fragment2.EndState };
                         fragmentStack.Push(frag);
                         break;
                     case '|':
@@ -314,7 +314,7 @@ namespace Compiler
                         fragment1 = fragmentStack.Pop();
                         start = StateId++;
                         end = fragment1.StartState;
-                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState= end };
+                        line = new Line() { StartState = start, Symbol = Helpers.EmptyOperator, EndState = end };
                         nfa.AddLine(line);
                         frag.StartState = start;
 
@@ -355,7 +355,7 @@ namespace Compiler
                         end = StateId++;
                         line = new Line() { StartState = start, Symbol = c, EndState = end };
                         nfa.AddLine(line);
-                        fragmentStack.Push(new Fragment() {StartState = start, EndState = end});
+                        fragmentStack.Push(new Fragment() { StartState = start, EndState = end });
                         break;
                 }
             }
@@ -363,7 +363,7 @@ namespace Compiler
             if (fragmentStack.Count != 0)
                 return null;
 
-            Dictionary<int, SortedList<int, LexicalUnit>> receiveStates = new Dictionary<int, SortedList<int, LexicalUnit>>() 
+            Dictionary<int, SortedList<int, LexicalUnit>> receiveStates = new Dictionary<int, SortedList<int, LexicalUnit>>()
             {
                 { frag.EndState, new SortedList<int, LexicalUnit>(){ { lexicalUnit.Priority, lexicalUnit } } }
             };

@@ -1,4 +1,4 @@
-﻿namespace Compiler
+﻿namespace Compiler.Syntax
 {
     public class SyntaxReader
     {

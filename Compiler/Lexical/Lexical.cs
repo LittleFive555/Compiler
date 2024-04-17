@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Compiler
+namespace Compiler.Lexical
 {
     public class Lexical
     {

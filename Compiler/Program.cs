@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using Compiler.Lexical;
+using Compiler.Syntax;
 
 namespace Compiler
 {

@@ -1,6 +1,7 @@
 ﻿using System.Text;
+using Compiler.Lexical;
 
-namespace Compiler
+namespace Compiler.Syntax
 {
     public class SyntaxAnalyzer
     {
@@ -215,8 +216,8 @@ namespace Compiler
                 if (haveLeftRecursion) // 只有存在左递归时，才对当前文法进行修改
                 {
                     // 给生成的新文法添加空表达式，并收集生成的新文法
-                    newSyntaxLine.Productions.Add(new Production(newSyntaxLine.Name) 
-                    { 
+                    newSyntaxLine.Productions.Add(new Production(newSyntaxLine.Name)
+                    {
                         Symbols = new List<string>() { Helpers.EmptyOperator.ToString() }
                     });
                     newSyntaxLines.Add(newSyntaxLine);
@@ -298,7 +299,7 @@ namespace Compiler
             List<int> indexesOnStart = new List<int>(indexesHaveLeftCommonFactor);
             if (leftCommonFactor.Count == syntaxLine.Productions[i].Symbols.Count) // 如果左公因子个数已经达到当前的符号个数，则停止
                 return;
-            
+
             leftCommonFactor.Add(syntaxLine.Productions[i].Symbols[leftCommonFactor.Count]);
             for (int j = i + 1; j < syntaxLine.Productions.Count; j++)
             {
@@ -419,7 +420,7 @@ namespace Compiler
         {
             // 如果是文法中左侧出现的符号，则是非终结符
             // 因为任何一个非终结符，都必须在文法左侧定义，而不能只出现在文法右侧
-            return !m_syntaxLines.Keys.Contains(symbol) 
+            return !m_syntaxLines.Keys.Contains(symbol)
                 && !symbol.Equals(Helpers.EmptyOperator.ToString())
                 && !symbol.Equals(EndSymbol);
         }
@@ -466,8 +467,8 @@ namespace Compiler
                                 if (followSet[nonTernimalSymbol].Contains(Helpers.EmptyOperator.ToString()))
                                     followSet[nonTernimalSymbol].Remove(Helpers.EmptyOperator.ToString());
                             }
-                            if ((currentSymbol.Equals(nonTernimalSymbol) && i + 1 == production.Symbols.Count)
-                                || (i + 1 < production.Symbols.Count && firstSet[production.Symbols[i + 1]].Contains(Helpers.EmptyOperator.ToString())))
+                            if (currentSymbol.Equals(nonTernimalSymbol) && i + 1 == production.Symbols.Count
+                                || i + 1 < production.Symbols.Count && firstSet[production.Symbols[i + 1]].Contains(Helpers.EmptyOperator.ToString()))
                             {
                                 if (followSet.ContainsKey(syntaxLine.Name))
                                 {
