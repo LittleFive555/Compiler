@@ -6,20 +6,21 @@ namespace Compiler
     {
         static void Main(string[] args)
         {
+            // XXX 需要先读取自定义的词法正则表达式，再读取保留字和特殊符号，因为有判断优先级的问题
+            //     或者通过显示传参的方式控制优先级问题
             List<LexicalRegex> allLexicalRegex = LexicalRegexLoader.ReadRegexFromMultiFiles(
+                "E:\\SourceCode\\Compiler\\File\\LexerDefine.txt",
                 "E:\\SourceCode\\Compiler\\File\\ReservedWord.txt",
-                "E:\\SourceCode\\Compiler\\File\\Symbols.txt",
-                "E:\\SourceCode\\Compiler\\File\\LexerDefine.txt");
+                "E:\\SourceCode\\Compiler\\File\\Symbols.txt");
 
             FA nfa = Regex2NFA.Execute(allLexicalRegex.ToArray());
             var dfa = NFA2DFA.Execute(nfa);
             var syntaxLines = SyntaxReader.ReadFromFile("E:\\SourceCode\\Compiler\\File\\SyntaxDefine.txt");
             SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(syntaxLines);
 
-            string input = "1+3*5";
+            string input = "var a = 3";
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(input));
             var tokens = Lexical.Read(stream, dfa);
-
             syntaxAnalyzer.Execute(tokens);
         }
 

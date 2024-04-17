@@ -26,10 +26,13 @@
                 while (true)
                 {
                     var lineContent = streamReader.ReadLine();
-                    if (string.IsNullOrEmpty(lineContent))
+                    if (lineContent == null) // 表示读到末尾
                         break;
 
-                    int seperateIndex = lineContent.IndexOf(":");
+                    if (string.IsNullOrEmpty(lineContent)) // 表示读到空行
+                        continue;
+
+                    int seperateIndex = lineContent.IndexOf(":"); // 表示读到非正则产生式的行
                     if (seperateIndex == -1)
                         continue;
 

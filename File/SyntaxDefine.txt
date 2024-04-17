@@ -1,4 +1,12 @@
-S:MathE1
+S: LocalAssignValue
+
 MathE1: MathE1 Plus MathE2 | MathE1 Minus MathE2 | MathE2 
 MathE2: MathE2 Multiply Factor | MathE2 Divide Factor | Factor
-Factor: Identifier | Number | LeftPar MathE1 RightPar
+Factor: Expression | LeftPar MathE1 RightPar
+
+LocalAssignValue: LocalDeclaration Assign ValueList
+LocalDeclaration: Var IdentifierList
+AssignValue: IdentifierList  Assign ValueList
+IdentifierList: Identifier | IdentifierList Comma Identifier
+ValueList: Expression | ValueList Comma Expression
+Expression: Identifier | Number
