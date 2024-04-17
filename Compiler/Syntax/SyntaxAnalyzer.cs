@@ -67,13 +67,13 @@ namespace Compiler.Syntax
                         production = syntaxProductions[0];
                     else
                     {
-                        if (syntaxProductions[0].Symbols.Count == 1 && syntaxProductions[0].Symbols[0].Equals(Helpers.EmptyOperator.ToString()))
+                        if (IsEmptyProduction(syntaxProductions[0]))
                             production = syntaxProductions[1];
                         else
                             production = syntaxProductions[0];
                     }
 
-                    if (production.Symbols.Count == 1 && production.Symbols[0].Equals(Helpers.EmptyOperator.ToString()))
+                    if (IsEmptyProduction(production))
                         stack.Pop();
                     else
                     {
@@ -151,6 +151,11 @@ namespace Compiler.Syntax
         private void EliminateCircle()
         {
             // TODO
+        }
+
+        private bool IsEmptyProduction(Production production)
+        {
+            return production.Symbols.Count == 1 && production.Symbols[0].Equals(Helpers.EmptyOperator.ToString());
         }
 
         /// <summary>
@@ -394,7 +399,7 @@ namespace Compiler.Syntax
                 foreach (var production in syntaxLine.Productions)
                 {
                     bool haveEmptyProduction = true;
-                    if (production.Symbols.Count == 1 && production.Symbols[0].Equals(Helpers.EmptyOperator.ToString()))
+                    if (IsEmptyProduction(production))
                     {
                         firstSet[symbol].Add(Helpers.EmptyOperator.ToString());
                     }
