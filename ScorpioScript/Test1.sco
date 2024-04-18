@@ -36,4 +36,10 @@ switch(abs) {
     default:
 }
 
+asdsadas()
+
+adsadasfas() {
+
+}
+
 return

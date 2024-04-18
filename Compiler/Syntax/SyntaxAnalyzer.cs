@@ -553,7 +553,6 @@ namespace Compiler.Syntax
 
         private void PrintPredictiveAnalysisTable(Dictionary<string, Dictionary<string, List<Production>>> table)
         {
-            Dictionary<string, Dictionary<string, List<Production>>> invalid = new Dictionary<string, Dictionary<string, List<Production>>>();
             StringBuilder stringBuilder = new StringBuilder();
             foreach (var pair1 in table)
             {
