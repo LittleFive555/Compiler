@@ -41,7 +41,7 @@
                         continue;
 
                     bool isAdded = false;
-                    int dfaStateId;
+                    int dfaStateId = StateId;
                     foreach (var dfaState in dfaStates)
                     {
                         if (IsSame(dfaState.Value, newStateSet))
@@ -51,12 +51,13 @@
                             break;
                         }
                     }
-                    if (isAdded)
-                        continue;
+                    if (!isAdded)
+                    {
+                        dfaStates.Add(dfaStateId, newStateSet);
+                        marks.Add(dfaStateId, false);
+                        StateId++;
+                    }
 
-                    dfaStateId = StateId++;
-                    dfaStates.Add(dfaStateId, newStateSet);
-                    marks.Add(dfaStateId, false);
                     foreach (var nfaState in newStateSet)
                     {
                         if (nfa.ReceiveStates.Keys.Contains(nfaState))
