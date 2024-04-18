@@ -25,8 +25,8 @@ namespace Compiler
             SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(syntaxLines);
 
             var tokens = LexicalAnalyzer.Read(File.OpenRead("E:\\SourceCode\\Compiler\\ScorpioScript\\Test1.sco"), dfa);
-            foreach (var token in tokens)
-                Console.WriteLine(string.Format("Content: {0}, LexicalUnitName: {1}, TokenLength: {2}", token.Content, token.LexicalUnit.Name, token.Length));
+            //foreach (var token in tokens)
+            //    Console.WriteLine(string.Format("Content: {0}, LexicalUnitName: {1}, TokenLength: {2}", token.Content, token.LexicalUnit.Name, token.Length));
             syntaxAnalyzer.Execute(tokens);
         }
 
