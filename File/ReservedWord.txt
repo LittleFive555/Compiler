@@ -10,7 +10,7 @@ Var:var|let
 
 If:if
 Else:else
-ElseIf:elif|elseif
+ElseIf:elseif|else if
 
 For:for
 Foreach:foreach
@@ -35,3 +35,4 @@ Async:async
 Await:await
 True:true|TRUE|True
 False:false|FALSE|False
+Get:get

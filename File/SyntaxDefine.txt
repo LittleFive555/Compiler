@@ -1,67 +1,90 @@
+// TODO 现在for、函数定义以及函数调用的分析表中有多条定义，需要消除
+
 S: MultiStatement
 
 // 语句
-MultiStatement: Statement MultiStatement | Statement | ·
-Statement: Expression | CodeBlock | IfStatement | ForStatement | ForStatement | WhileStatement | ClassDefine | FunctionDefine
-Expression: LocalAssign | AssignValue | FunctionCall
+MultiStatement: MultiStatement Statement | Statement 
+SemicolonOrNot: Semicolon
+Statement: Expression | CodeBlock | FunctionDefine | IfStatement | ForStatement | ForeachStatement | WhileStatement | ClassStatement | ReturnStatement | BreakStatement | ContinueStatement | SwitchStatement | CaseStatement | DefaultStatement | TryStatement | ThrowStatement | AwaitStatement | AsyncStatement
+Expression: Var IdentifierList AssignValue | IdentifierList AssignValue
 
+// 运算
+Value: Operation1
 Operation1: Operation1 And Operation2 | Operation1 Minus Operation2 | Operation2 
 Operation2: Operation2 InclusiveOr Operation3 | Operation2 Combine Operation3 | Operation2 XOR Operation3 | Operation2 LShift Operation3 | Operation2 RShift Operation3 | Operation3
 Operation3: Operation3 Equal Operation4 | Operation3 NotEqual Operation4 | Operation3 EqualReference Operation4 | Operation3 NotEqualReference Operation4 | Operation3 Greater Operation4 | Operation3 GreaterOrEqual Operation4 | Operation3 Less Operation4 | Operation3 LessOrEqual Operation4 | Operation4
 Operation4: Operation4 Plus Operation5 | Operation4 Minus Operation5 | Operation5
 Operation5: Operation5 Multiply Factor | Operation5 Divide Factor | Operation5 Modulo Factor | Factor 
-Factor: Expression | LeftPar Operation1 RightPar
+Factor: Object | LeftPar Value RightPar
 
 // 声明和赋值
-LocalAssign: LocalAssignValue | LocalDeclaration
-LocalAssignValue: LocalDeclaration AssignSymbol Expression
-LocalDeclaration: Var IdentifierList
-AssignValue: IdentifierList AssignSymbol Expression
+ValueList: Value | ValueList Comma Value
+AssignValue: AssignSymbol Value | ·
 IdentifierList: Identifier | IdentifierList Comma Identifier
 AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign | ModuloAssign | CombineAssign | InclusiveOrAssign | XORAssign | ShrAssign | ShiAssign
-Object: FunctionCall | Number | String | Identifier
 
-// Number（定义完善）
-Number: Long | Double | Minus Long | Minus Double | Negative Long
+Object: Number | Identifier FunctionOrMember | Boolean
+FunctionOrMember: IsFuncCallOrNot | CallMember | IndexMember
+IsFuncCallOrNot: FunctionParams | ·
+IndexMember: LeftBracket Value RightBracket IndexMember | LeftBracket Value RightBracket
+CallMember: Period Identifier IsFuncCallOrNot CallMember | Period Identifier IsFuncCallOrNot
 
 // 函数
-FunctionDefine : Function Identifier LeftPar IdentifierList RightPar LeftBrace FunctionBlock RightBrace | FunctionDefineWithZeroParams | AnonymousFunctionDefine | FunctionDefineWithoutContent | FunctionDefineWithZeroParamsWithoutContent | AnonymousFunctionDefineWithoutContent
-FunctionDefineWithZeroParams : Function Identifier LeftPar RightPar LeftBrace FunctionBlock RightBrace
-AnonymousFunctionDefine : Function Identifier LeftBrace FunctionBlock RightBrace
-FunctionDefineWithoutContent : Function Identifier LeftPar IdentifierList RightPar LeftBrace RightBrace
-FunctionDefineWithZeroParamsWithoutContent : Function Identifier LeftPar RightPar LeftBrace RightBrace
-AnonymousFunctionDefineWithoutContent : Function Identifier LeftBrace RightBrace
-FunctionBlock : MultiStatement
-
-FunctionCall: Identifier LeftPar IdentifierList RightPar | FunctionCallWithZeroParams
-FunctionCallWithZeroParams: Identifier LeftPar RightPar
-
-MemberCall: MemberByPeriod | MemberByBracket
-// 类
-ClassDefine :
-MemberByPeriod: Identifier Period Identifier | Identifier Period FunctionCall
-
-// 布尔值
-Boolean : True | False | Not Boolean
-
-// 列表
-Array: LeftBracket
-// 字典
-Map: LeftBrace
-MemberByBracket: Identifier LeftBrace Expression RightBrace
+FunctionDefine : Function Identifier FunctionParams CodeBlock | Identifier FunctionParams CodeBlock | Function FunctionParams CodeBlock
+FunctionParams : LeftPar FunctionParamsRight
+FunctionParamsRight: ValueList RightPar | RightPar
 
 // 代码块
-CodeBlock: LeftBrace MultiStatement RightBrace
+CodeBlock : LeftBrace MultiStatement RightBrace | LeftBrace RightBrace
+
+// 布尔值
+Boolean : True | False
+
 // if语句
-IfStatement:
-// for语句
-ForStatement:
+IfStatement : If LeftPar Value RightPar CodeBlock NotIfPart
+NotIfPart : ElseIf LeftPar Value RightPar CodeBlock NotIfPart | ElsePart
+ElsePart: Else CodeBlock | ·
+
+// for语句 (存在间接左递归，会无法判断两种for，可能需要去除间接左递归，或者引入回溯)
+ForStatement: For LeftPar ForPart
+ForPart: MultiStatement ForNormalPartTwo | ForNormalPartTwo | Var ForSimpleNoAssign | ForSimpleNoAssign
+// for(,)
+ForSimpleNoAssign: Identifier AssignValue Comma Value RightPar CodeBlock
+// for语句 for(;;)
+ForNormalPartTwo: Semicolon Value ForNormalPartThree | Semicolon ForNormalPartThree
+ForNormalPartThree: Semicolon MultiStatement RightPar CodeBlock | Semicolon RightPar CodeBlock
+
 // foreach语句
-ForeachStatement:
+ForeachStatement: Foreach LeftPar Var Identifier In Object RightPar CodeBlock
+
 // while语句
-WhileStatement:
-// switch语句
-SwitchStatement:
+WhileStatement: While LeftPar Value RightPar CodeBlock
+
+// class定义
+ClassStatement: Class Identifier ClassInherit
+ClassInherit: Colon Identifier ClassContent | ClassContent
+ClassContent: LeftBrace ClassMultiFunctionDefine RightBrace | LeftBrace RightBrace
+ClassMultiFunctionDefine: ClassMultiFunctionDefine ClassFunctionDefine | ClassFunctionDefine
+ClassFunctionDefine: AsyncStatement | Get Identifier FunctionParams CodeBlock | FunctionDefine
+
+// return
+ReturnStatement: Return | Return Value
+
+// break
+BreakStatement: Break
+
+// continue
+ContinueStatement: Continue
+
+// switch
+SwitchStatement: Switch LeftPar Value RightPar CodeBlock
+CaseStatement: Case Value Colon
+DefaultStatement: Default Colon
+
 // 异常
+TryStatement: Try CodeBlock Catch LeftPar Identifier RightPar CodeBlock
+ThrowStatement: Throw Value
 
 // 异步
+AwaitStatement: Await Value
+AsyncStatement: Async FunctionDefine

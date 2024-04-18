@@ -30,16 +30,22 @@ namespace Compiler.Syntax
             int counter = 0;
             while (currentSymbol != EndSymbol)
             {
-                //StringBuilder stringBuilder = new StringBuilder();
-                //stringBuilder.Append(counter++);
-                //stringBuilder.Append(" : ");
-                //for (int i = 0; i < index && i < tokens.Count; i++)
-                //    stringBuilder.Append(tokens[i].Content);
-                //stringBuilder.Append("\t\t\t");
-                //var stackList = stack.ToArray();
-                //for (int i = 0; i < stackList.Length; i++)
-                //    stringBuilder.Append(stackList[i]);
-                //Console.WriteLine(stringBuilder.ToString());
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(counter++);
+                stringBuilder.Append(" : ");
+                for (int i = 0; i < index && i < tokens.Count; i++)
+                {
+                    stringBuilder.Append(tokens[i].Content);
+                    stringBuilder.Append(" ");
+                }
+                stringBuilder.Append("\t\t\t");
+                var stackList = stack.ToArray();
+                for (int i = 0; i < stackList.Length; i++)
+                {
+                    stringBuilder.Append(stackList[i]);
+                    stringBuilder.Append(" ");
+                }
+                Console.WriteLine(stringBuilder.ToString());
 
                 string currentTokenName = index < tokens.Count ? tokens[index].LexicalUnit.Name : EndSymbol;
                 if (currentSymbol.Equals(currentTokenName))
@@ -93,10 +99,10 @@ namespace Compiler.Syntax
             EliminateLeftRecursion();
             ExtractLeftCommonFactor();
 
-            //foreach (var syntaxLine in m_syntaxLines.Values)
-            //{
-            //    Console.WriteLine(syntaxLine.ToString());
-            //}
+            foreach (var syntaxLine in m_syntaxLines.Values)
+            {
+                Console.WriteLine(syntaxLine.ToString());
+            }
 
             var firstSet = FirstSet();
             //Console.WriteLine("FirstSet:");
@@ -134,7 +140,7 @@ namespace Compiler.Syntax
             }
 
             m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
-            //PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
+            PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
         }
 
         /// <summary>
@@ -547,6 +553,7 @@ namespace Compiler.Syntax
 
         private void PrintPredictiveAnalysisTable(Dictionary<string, Dictionary<string, List<Production>>> table)
         {
+            Dictionary<string, Dictionary<string, List<Production>>> invalid = new Dictionary<string, Dictionary<string, List<Production>>>();
             StringBuilder stringBuilder = new StringBuilder();
             foreach (var pair1 in table)
             {

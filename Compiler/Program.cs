@@ -16,13 +16,17 @@ namespace Compiler
                 "E:\\SourceCode\\Compiler\\File\\Symbols.txt");
 
             FA nfa = Regex2NFA.Execute(allLexicalRegex.ToArray());
+            //Console.WriteLine("NFA:");
+            //Console.WriteLine(nfa);
             var dfa = NFA2DFA.Execute(nfa);
+            //Console.WriteLine("DFA:");
+            //Console.WriteLine(dfa);
             var syntaxLines = SyntaxReader.ReadFromFile("E:\\SourceCode\\Compiler\\File\\SyntaxDefine.txt");
             SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(syntaxLines);
 
-            string input = "var a = 3";
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(input));
-            var tokens = LexicalAnalyzer.Read(stream, dfa);
+            var tokens = LexicalAnalyzer.Read(File.OpenRead("E:\\SourceCode\\Compiler\\ScorpioScript\\Test1.sco"), dfa);
+            foreach (var token in tokens)
+                Console.WriteLine(string.Format("Content: {0}, LexicalUnitName: {1}, TokenLength: {2}", token.Content, token.LexicalUnit.Name, token.Length));
             syntaxAnalyzer.Execute(tokens);
         }
 
@@ -52,14 +56,8 @@ namespace Compiler
             var nfa = Regex2NFA.Execute(
                 new LexicalRegex()
                 {
-                    Name = Helpers.WhitespaceName,
-                    RegexContent = Helpers.WhitespaceRegex,
-                    Priority = 0
-                },
-                new LexicalRegex()
-                {
-                    Name = "Number",
-                    RegexContent = "0|1|2|3|4|5|6|7|8|9",
+                    Name = "Digit",
+                    RegexContent = "(0|1)+",
                     Priority = 1
                 });
             Console.WriteLine("NFA:");
@@ -68,7 +66,7 @@ namespace Compiler
             Console.WriteLine("DFA:");
             Console.WriteLine(dfa);
 
-            string input = "1  2    3 42\r\n55 9";
+            string input = "100";
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(input));
             var result = LexicalAnalyzer.Read(stream, dfa);
             foreach (var token in result)
