@@ -58,7 +58,7 @@ AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign 
 
 
 
-Object: Number | Identifier | Boolean | Identifier FunctionOrMember
+Object: Number | Identifier | Boolean | Identifier FunctionOrMember | String
 
 FunctionOrMember: FunctionParams | CallMember | IndexMember
 

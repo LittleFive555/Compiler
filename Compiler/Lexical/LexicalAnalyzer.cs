@@ -18,6 +18,38 @@ namespace Compiler.Lexical
                 char c = ReadChar(stream);
                 long forward = stream.Position;
                 stringBuilder.Append(c);
+
+                if (c == '"' || c == '\'' || c == '`') // 对字符串的处理
+                {
+                    char strStart = c;
+                    do
+                    {
+                        c = ReadChar(stream);
+                        forward = stream.Position;
+                        stringBuilder.Append(c);
+
+                    } while (c != strStart && !c.Equals('\0'));
+
+                    if (c == strStart)
+                    {
+                        Token token = new Token()
+                        {
+                            Content = stringBuilder.ToString(),
+                            LexicalUnit = new LexicalUnit() { Name = "String", Priority = -1 },
+                            Length = stringBuilder.Length,
+                        };
+                        result.Add(token);
+
+                        stringBuilder.Clear();
+                        lexemeBegin = stream.Position;
+                    }
+                    else
+                    {
+                        throw new Exception();
+                    }
+                    continue;
+                }
+
                 if (CanMove(dfa, currentDFAStateId, c, out int nextStateId))
                 {
                     currentDFAStateId = nextStateId;

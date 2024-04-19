@@ -46,8 +46,6 @@ for (var a  = 3, 100) {
 
 }
 
-for (var a  = 3; a < 100; a++) {
-
-}
+a = "1003213"
 
 return
