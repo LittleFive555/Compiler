@@ -4,9 +4,24 @@ namespace Compiler.Lexical
 {
     internal class LexicalRegex
     {
-        public string Name;
-        public string RegexContent;
-        public int Priority;
+        public string Name { get; }
+        public LexicalType Type { get; }
+        public int Priority { get; }
+
+        public string RegexContent { get; private set; }
+
+        public LexicalRegex(string name, string regexContent, LexicalType type, int priority)
+        {
+            Name = name;
+            RegexContent = regexContent;
+            Type = type;
+            Priority = priority;
+        }
+
+        public void ChangeRegex(string regexContent)
+        {
+            RegexContent = regexContent;
+        }
 
         public override string ToString()
         {
@@ -51,7 +66,7 @@ namespace Compiler.Lexical
         public static FA? Execute(LexicalRegex lexicalRegex)
         {
             var post = Regex2Post(lexicalRegex.RegexContent);
-            return Post2NFA(post, new LexicalUnit() { Name = lexicalRegex.Name, Priority = lexicalRegex.Priority });
+            return Post2NFA(post, new LexicalUnit(lexicalRegex.Name, lexicalRegex.Type, lexicalRegex.Priority));
         }
 
         public static FA? Execute(params LexicalRegex[] lexicalRegexs)
@@ -64,7 +79,7 @@ namespace Compiler.Lexical
             foreach (var lexicalRegex in lexicalRegexs)
             {
                 var post = Regex2Post(lexicalRegex.RegexContent);
-                var nfa = Post2NFA(post, new LexicalUnit() { Name = lexicalRegex.Name, Priority = lexicalRegex.Priority });
+                var nfa = Post2NFA(post, new LexicalUnit(lexicalRegex.Name, lexicalRegex.Type, lexicalRegex.Priority));
                 nfaList.Add(nfa);
             }
 
@@ -138,7 +153,8 @@ namespace Compiler.Lexical
                                 regexToReplace = string.Format("({0})", regexToReplace);
                                 StringBuilder newRegexBuilder = new StringBuilder(currentRegex);
                                 newRegexBuilder.Replace(regexName, regexToReplace);
-                                lexicalRegexs[i].RegexContent = currentRegex = newRegexBuilder.ToString();
+                                currentRegex = newRegexBuilder.ToString();
+                                lexicalRegexs[i].ChangeRegex(currentRegex);
                                 j = subregexNameStartIndex + regexToReplace.Length;
                             }
                         }

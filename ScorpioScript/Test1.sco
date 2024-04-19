@@ -1,5 +1,5 @@
 var b = 3
-var c = 100
+var c = 100.15
 a = b + c
 
 if (a == b) {

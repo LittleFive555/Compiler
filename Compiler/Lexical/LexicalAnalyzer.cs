@@ -10,11 +10,7 @@ namespace Compiler.Lexical
         public LexicalAnalyzer(params LexicalRegex[] lexicalRegexs)
         {
             m_nfa = Regex2NFA.Execute(lexicalRegexs);
-            //Console.WriteLine("NFA:");
-            //Console.WriteLine(nfa);
             m_dfa = NFA2DFA.Execute(m_nfa);
-            //Console.WriteLine("DFA:");
-            //Console.WriteLine(dfa);
         }
 
         public Result Read(Stream stream)
@@ -60,7 +56,7 @@ namespace Compiler.Lexical
 
                             if (c == strStart)
                             {
-                                lexicalUnit = new LexicalUnit() { Name = "String", Priority = -1 };
+                                lexicalUnit = new LexicalUnit("String", LexicalType.Other, -1);
                                 lastReceivePos = forward;
                                 lineOnLastReceive = lineForward;
                                 lastReceiveStr = stringBuilder.ToString();
@@ -88,7 +84,7 @@ namespace Compiler.Lexical
                 {
                     if (lexicalUnit != null)
                     {
-                        if (lexicalUnit.Name != Helpers.WhitespaceName) // 跳过空白
+                        if (lexicalUnit.LexicalType != LexicalType.Whitespace) // 跳过空白
                         {
                             Token token = new Token(lastReceiveStr,
                                 lexicalUnit,
