@@ -3,7 +3,7 @@ using Compiler.Lexical;
 
 namespace Compiler.Syntax
 {
-    public class SyntaxAnalyzer
+    internal class SyntaxAnalyzer
     {
         private readonly Dictionary<string, SyntaxLine> m_syntaxLines;
         private Dictionary<string, Dictionary<string, List<Production>>> m_predictiveAnylisisTable;

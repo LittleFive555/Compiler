@@ -2,16 +2,29 @@
 
 namespace Compiler.Lexical
 {
-    public class LexicalAnalyzer
+    internal class LexicalAnalyzer
     {
-        public static List<Token> Read(Stream stream, FA dfa)
+        private FA m_nfa;
+        private FA m_dfa;
+
+        public LexicalAnalyzer(params LexicalRegex[] lexicalRegexs)
+        {
+            m_nfa = Regex2NFA.Execute(lexicalRegexs);
+            //Console.WriteLine("NFA:");
+            //Console.WriteLine(nfa);
+            m_dfa = NFA2DFA.Execute(m_nfa);
+            //Console.WriteLine("DFA:");
+            //Console.WriteLine(dfa);
+        }
+
+        public List<Token> Read(Stream stream)
         {
             List<Token> result = new List<Token>();
             long lexemeBegin = stream.Position;
             long lastReceivePos = lexemeBegin;
             string lastReceiveStr = null;
             StringBuilder stringBuilder = new StringBuilder();
-            int currentDFAStateId = dfa.StartState;
+            int currentDFAStateId = m_dfa.StartState;
             LexicalUnit? lexicalUnit = null;
             while (true)
             {
@@ -50,10 +63,10 @@ namespace Compiler.Lexical
                     continue;
                 }
 
-                if (CanMove(dfa, currentDFAStateId, c, out int nextStateId))
+                if (CanMove(m_dfa, currentDFAStateId, c, out int nextStateId))
                 {
                     currentDFAStateId = nextStateId;
-                    if (dfa.IsReceiveState(currentDFAStateId, out SortedList<int, LexicalUnit> lexicalUnits))
+                    if (m_dfa.IsReceiveState(currentDFAStateId, out SortedList<int, LexicalUnit> lexicalUnits))
                     {
                         lexicalUnit = lexicalUnits.Values[lexicalUnits.Count - 1];
                         lastReceivePos = forward;
@@ -75,7 +88,7 @@ namespace Compiler.Lexical
                             result.Add(token);
                         }
 
-                        currentDFAStateId = dfa.StartState;
+                        currentDFAStateId = m_dfa.StartState;
                         stream.Seek(lastReceivePos, SeekOrigin.Begin);
                         stringBuilder.Clear();
                         lexemeBegin = stream.Position;
