@@ -12,13 +12,11 @@ namespace Compiler
         public MyCompiler(string symbolDefineFile, string reservedWordDefineFile, string lexicalDefineFile, string syntaxDefineFile)
         {
             // XXX 需要先读取自定义的词法正则表达式，再读取保留字和特殊符号，因为有判断优先级的问题
-            List<LexicalRegex> allLexicalRegex =
-            [
-                new LexicalRegex(Helpers.WhitespaceName, Helpers.WhitespaceRegex, LexicalType.Whitespace, -1),
-                .. LexicalRegexLoader.ReadRegexFromFile(LexicalType.Other, lexicalDefineFile),
-                .. LexicalRegexLoader.ReadRegexFromFile(LexicalType.Symbol, symbolDefineFile),
-                .. LexicalRegexLoader.ReadRegexFromFile(LexicalType.ReservedWord, reservedWordDefineFile),
-            ];
+            List<LexicalRegex> allLexicalRegex = new List<LexicalRegex>();
+            allLexicalRegex.Add(new LexicalRegex(Helpers.WhitespaceName, Helpers.WhitespaceRegex, LexicalType.Whitespace, -1));
+            allLexicalRegex.AddRange(LexicalRegexLoader.ReadRegexFromFile(LexicalType.Other, lexicalDefineFile));
+            allLexicalRegex.AddRange(LexicalRegexLoader.ReadRegexFromFile(LexicalType.Symbol, symbolDefineFile));
+            allLexicalRegex.AddRange(LexicalRegexLoader.ReadRegexFromFile(LexicalType.ReservedWord, reservedWordDefineFile));
 
             m_lexicalAnalyzer = new LexicalAnalyzer(allLexicalRegex.ToArray());
 
@@ -26,24 +24,27 @@ namespace Compiler
             m_syntaxAnalyzer = new SyntaxAnalyzer(syntaxLines);
         }
 
-        public void Analyze(string filePath)
+        public AnalyzeResult Analyze(string filePath)
         {
-            Analyze(File.OpenRead(filePath));
+            return Analyze(File.OpenRead(filePath));
         }
 
-        public void Analyze(Stream stream)
+        public AnalyzeResult Analyze(Stream stream)
         {
+            AnalyzeResult analyzeResult = new AnalyzeResult();
             var result = m_lexicalAnalyzer.Read(stream);
-
-            foreach (var token in result.Tokens)
-                Console.WriteLine(token);
-            foreach (var error in result.Errors)
-                Console.WriteLine(error);
+            analyzeResult.CompileErrors = result.Errors;
 
             if (result.Errors.Count > 0)
-                return;
+                return analyzeResult;
 
             m_syntaxAnalyzer.Execute(result.Tokens);
+            return analyzeResult;
         }
+    }
+
+    public class AnalyzeResult
+    {
+        public List<CompileError> CompileErrors;
     }
 }

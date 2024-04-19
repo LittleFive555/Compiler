@@ -140,7 +140,7 @@ namespace Compiler.Syntax
             }
 
             m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
-            PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
+            //PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
         }
 
         /// <summary>
