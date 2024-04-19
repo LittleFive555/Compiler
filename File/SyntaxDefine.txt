@@ -9,10 +9,8 @@ MultiStatement: Statement MultiStatement | Statement
 
 SemicolonOrNot: Semicolon
 
-Statement: Var Identifier IdentifierList1 AssignValue     |     Identifier Statement1      |     CodeBlock     |     Function Statement2      |     IfStatement     |     ForStatement     |     ForeachStatement | WhileStatement | ClassStatement | ReturnStatement | BreakStatement | ContinueStatement | SwitchStatement | CaseStatement | DefaultStatement | TryStatement | ThrowStatement | AwaitStatement | AsyncStatement
+Statement:    AssignStatement    |     CodeBlock     |     Function Statement2      |     IfStatement     |     ForStatement     |     ForeachStatement | WhileStatement | ClassStatement | ReturnStatement | BreakStatement | ContinueStatement | SwitchStatement | CaseStatement | DefaultStatement | TryStatement | ThrowStatement | AwaitStatement | AsyncStatement
 
-Statement1:Comma Identifier IdentifierList1 AssignValue | AssignValue | LeftPar FunctionParamsRight Statement11 | CallMember | IndexMember
-Statement11:CodeBlock | ·
 
 Statement2:Identifier FunctionParams CodeBlock | FunctionParams CodeBlock
 
@@ -34,11 +32,27 @@ Factor: Object | LeftPar Value RightPar
 
 
 // 声明和赋值
+AssignStatement: Var CanAssignValue CanAssignValueList AssignValue | CanAssignValue AssignStatement1
+
+AssignStatement1:Comma CanAssignValue CanAssignValueList AssignValue | AssignSymbol Value | LeftPar FunctionParamsRight AssignStatement11 | CallMember | IndexMember | ·
+
+AssignStatement11:CodeBlock | ·
+
+CanAssignValue: Identifier | Identifier CallMember | Identifier IndexMember | MultiAssign
+
+MultiAssign: LeftBracket Identifier MultiAssign1
+
+MultiAssign1: RightBracket | Comma IdentifierList RightBracket
+
+IdentifierList: Identifier IdentifierList1 | ·
+
+IdentifierList1: Comma IdentifierList | Identifier | ·
+
 ValueList: Value | ValueList Comma Value
 
 AssignValue: AssignSymbol Value | ·
 
-IdentifierList1: Comma Identifier IdentifierList1 | ·
+CanAssignValueList: Comma CanAssignValue CanAssignValueList | ·
 
 AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign | ModuloAssign | CombineAssign | InclusiveOrAssign | XORAssign | ShrAssign | ShiAssign
 
@@ -87,10 +101,8 @@ ElsePart: Else CodeBlock | ·
 // for语句 (存在间接左递归，会无法判断两种for，可能需要去除间接左递归，或者引入回溯)
 ForStatement: For LeftPar ForPart
 
-ForPart: MultiStatement ForNormalPartTwo | ForNormalPartTwo | Var ForSimpleNoAssign | ForSimpleNoAssign
-
-// for(,)
-ForSimpleNoAssign: Identifier AssignValue Comma Value RightPar CodeBlock
+// 此处限定for第一部分只能出现赋值语句，但实际上的Scorpio实现不止可以赋值，而可以任何语句
+ForPart: AssignStatement ForNormalPartTwo | ForNormalPartTwo | Var Identifier AssignValue Comma Value RightPar CodeBlock | Identifier AssignValue Comma Value RightPar CodeBlock
 
 // for语句 for(;;)
 ForNormalPartTwo: Semicolon Value ForNormalPartThree | Semicolon ForNormalPartThree

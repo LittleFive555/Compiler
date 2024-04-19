@@ -30,22 +30,22 @@ namespace Compiler.Syntax
             int counter = 0;
             while (currentSymbol != EndSymbol)
             {
-                //StringBuilder stringBuilder = new StringBuilder();
-                //stringBuilder.Append(counter++);
-                //stringBuilder.Append(" : ");
-                //for (int i = 0; i < index && i < tokens.Count; i++)
-                //{
-                //    stringBuilder.Append(tokens[i].Content);
-                //    stringBuilder.Append(" ");
-                //}
-                //stringBuilder.Append("\t\t\t");
-                //var stackList = stack.ToArray();
-                //for (int i = 0; i < stackList.Length; i++)
-                //{
-                //    stringBuilder.Append(stackList[i]);
-                //    stringBuilder.Append(" ");
-                //}
-                //Console.WriteLine(stringBuilder.ToString());
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(counter++);
+                stringBuilder.Append(" : ");
+                for (int i = 0; i < index && i < tokens.Count; i++)
+                {
+                    stringBuilder.Append(tokens[i].Content);
+                    stringBuilder.Append(" ");
+                }
+                stringBuilder.Append("\t\t\t");
+                var stackList = stack.ToArray();
+                for (int i = 0; i < stackList.Length; i++)
+                {
+                    stringBuilder.Append(stackList[i]);
+                    stringBuilder.Append(" ");
+                }
+                Console.WriteLine(stringBuilder.ToString());
 
                 string currentTokenName = index < tokens.Count ? tokens[index].LexicalUnit.Name : EndSymbol;
                 if (currentSymbol.Equals(currentTokenName))
@@ -140,7 +140,7 @@ namespace Compiler.Syntax
             }
 
             m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
-            //PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
+            PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
         }
 
         /// <summary>
@@ -255,7 +255,7 @@ namespace Compiler.Syntax
         /// </summary>
         private void ExtractLeftCommonFactor()
         {
-            List<SyntaxLine> newSyntaxLines = new List<SyntaxLine>();
+            Dictionary<string, SyntaxLine> newSyntaxLines = new Dictionary<string, SyntaxLine>();
             foreach (var syntaxLine in m_syntaxLines.Values)
             {
                 for (int i = 0; i < syntaxLine.Productions.Count; i++)
@@ -268,6 +268,8 @@ namespace Compiler.Syntax
                     {
                         SyntaxLine newSyntaxLine = new SyntaxLine();
                         newSyntaxLine.Name = string.Format("{0}'", syntaxLine.Name);
+                        while (newSyntaxLines.ContainsKey(newSyntaxLine.Name))
+                            newSyntaxLine.Name = string.Format("{0}'", newSyntaxLine.Name);
 
                         // 获取需要移除的具有左公因子的表达式，并生成新文法的所有表达式
                         List<Production> toRemoveProductions = new List<Production>();
@@ -297,11 +299,11 @@ namespace Compiler.Syntax
                         syntaxLine.Productions.Add(newProductionForOld);
 
                         newSyntaxLine.Productions.AddRange(newProductionsForNew);
-                        newSyntaxLines.Add(newSyntaxLine);
+                        newSyntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
                     }
                 }
             }
-            foreach (var newSyntaxLine in newSyntaxLines)
+            foreach (var newSyntaxLine in newSyntaxLines.Values)
                 AddNewSyntaxLine(newSyntaxLine);
         }
 
