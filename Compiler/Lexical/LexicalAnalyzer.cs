@@ -20,8 +20,12 @@ namespace Compiler.Lexical
         public List<Token> Read(Stream stream)
         {
             List<Token> result = new List<Token>();
+
             long lexemeBegin = stream.Position;
             long lastReceivePos = lexemeBegin;
+            int lineForward = 1;
+            int lineOnLastReceive = lineForward;
+            long positionOnNewLine = lexemeBegin - 1;
             string lastReceiveStr = null;
             StringBuilder stringBuilder = new StringBuilder();
             int currentDFAStateId = m_dfa.StartState;
@@ -32,35 +36,10 @@ namespace Compiler.Lexical
                 long forward = stream.Position;
                 stringBuilder.Append(c);
 
-                if (c == '"' || c == '\'' || c == '`') // 对字符串的处理
+                if (c == '\n')
                 {
-                    char strStart = c;
-                    do
-                    {
-                        c = ReadChar(stream);
-                        forward = stream.Position;
-                        stringBuilder.Append(c);
-
-                    } while (c != strStart && !c.Equals('\0'));
-
-                    if (c == strStart)
-                    {
-                        Token token = new Token()
-                        {
-                            Content = stringBuilder.ToString(),
-                            LexicalUnit = new LexicalUnit() { Name = "String", Priority = -1 },
-                            Length = stringBuilder.Length,
-                        };
-                        result.Add(token);
-
-                        stringBuilder.Clear();
-                        lexemeBegin = stream.Position;
-                    }
-                    else
-                    {
-                        throw new Exception();
-                    }
-                    continue;
+                    lineForward++;
+                    positionOnNewLine = forward - 1;
                 }
 
                 if (CanMove(m_dfa, currentDFAStateId, c, out int nextStateId))
@@ -68,9 +47,36 @@ namespace Compiler.Lexical
                     currentDFAStateId = nextStateId;
                     if (m_dfa.IsReceiveState(currentDFAStateId, out SortedList<int, LexicalUnit> lexicalUnits))
                     {
-                        lexicalUnit = lexicalUnits.Values[lexicalUnits.Count - 1];
-                        lastReceivePos = forward;
-                        lastReceiveStr = stringBuilder.ToString();
+                        if (c == '"' || c == '\'' || c == '`') // 对字符串的处理
+                        {
+                            char strStart = c;
+                            do
+                            {
+                                c = ReadChar(stream);
+                                forward = stream.Position;
+                                stringBuilder.Append(c);
+
+                            } while (c != strStart && !c.Equals('\0'));
+
+                            if (c == strStart)
+                            {
+                                lexicalUnit = new LexicalUnit() { Name = "String", Priority = -1 };
+                                lastReceivePos = forward;
+                                lineOnLastReceive = lineForward;
+                                lastReceiveStr = stringBuilder.ToString();
+                            }
+                            else
+                            {
+                                throw new Exception();
+                            }
+                        }
+                        else
+                        {
+                            lexicalUnit = lexicalUnits.Values[lexicalUnits.Count - 1];
+                            lastReceivePos = forward;
+                            lineOnLastReceive = lineForward;
+                            lastReceiveStr = stringBuilder.ToString();
+                        }
                     }
                 }
                 else
@@ -79,17 +85,17 @@ namespace Compiler.Lexical
                     {
                         if (lexicalUnit.Name != Helpers.WhitespaceName) // 跳过空白
                         {
-                            Token token = new Token()
-                            {
-                                Content = lastReceiveStr,
-                                LexicalUnit = lexicalUnit,
-                                Length = (int)(lastReceivePos - lexemeBegin),
-                            };
+                            Token token = new Token(lastReceiveStr,
+                                lexicalUnit,
+                                lineForward,
+                                (int)(lexemeBegin - positionOnNewLine),
+                                (int)(lastReceivePos - lexemeBegin));
                             result.Add(token);
                         }
 
                         currentDFAStateId = m_dfa.StartState;
                         stream.Seek(lastReceivePos, SeekOrigin.Begin);
+                        lineForward = lineOnLastReceive;
                         stringBuilder.Clear();
                         lexemeBegin = stream.Position;
                         lexicalUnit = null;

@@ -28,8 +28,8 @@ namespace Compiler
         public void Analyze(Stream stream)
         {
             var tokens = m_lexicalAnalyzer.Read(stream);
-            //foreach (var token in tokens)
-            //    Console.WriteLine(string.Format("Content: {0}, LexicalUnitName: {1}, TokenLength: {2}", token.Content, token.LexicalUnit.Name, token.Length));
+            foreach (var token in tokens)
+                Console.WriteLine(token);
             m_syntaxAnalyzer.Execute(tokens);
         }
     }
