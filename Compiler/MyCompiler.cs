@@ -27,10 +27,17 @@ namespace Compiler
 
         public void Analyze(Stream stream)
         {
-            var tokens = m_lexicalAnalyzer.Read(stream);
-            foreach (var token in tokens)
+            var result = m_lexicalAnalyzer.Read(stream);
+
+            foreach (var token in result.Tokens)
                 Console.WriteLine(token);
-            m_syntaxAnalyzer.Execute(tokens);
+            foreach (var error in result.Errors)
+                Console.WriteLine(error);
+
+            if (result.Errors.Count > 0)
+                return;
+
+            m_syntaxAnalyzer.Execute(result.Tokens);
         }
     }
 }

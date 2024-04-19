@@ -2,11 +2,11 @@
 {
     public class Token
     {
-        public string Content;
-        public LexicalUnit LexicalUnit;
-        public int Line;
-        public int StartColumn;
-        public int Length;
+        public string Content { get; }
+        public LexicalUnit LexicalUnit { get; }
+        public int Line { get; }
+        public int StartColumn { get; }
+        public int Length { get; }
 
         public Token(string content, LexicalUnit lexicalUnit, int line, int startColumn, int length)
         {

@@ -17,9 +17,9 @@ namespace Compiler.Lexical
             //Console.WriteLine(dfa);
         }
 
-        public List<Token> Read(Stream stream)
+        public Result Read(Stream stream)
         {
-            List<Token> result = new List<Token>();
+            Result result = new Result();
 
             long lexemeBegin = stream.Position;
             long lastReceivePos = lexemeBegin;
@@ -67,7 +67,12 @@ namespace Compiler.Lexical
                             }
                             else
                             {
-                                throw new Exception();
+                                result.AppendError(new CompileError(string.Empty, 
+                                    lineForward, 
+                                    (int)(lexemeBegin - positionOnNewLine), 
+                                    (int)(forward - lexemeBegin), 
+                                    string.Format("发现未配对的字符串符号 {0}", strStart)));
+                                // TODO 进行错误恢复
                             }
                         }
                         else
@@ -90,7 +95,7 @@ namespace Compiler.Lexical
                                 lineForward,
                                 (int)(lexemeBegin - positionOnNewLine),
                                 (int)(lastReceivePos - lexemeBegin));
-                            result.Add(token);
+                            result.AppendToken(token);
                         }
 
                         currentDFAStateId = m_dfa.StartState;
@@ -102,8 +107,12 @@ namespace Compiler.Lexical
                     }
                     else
                     {
-                        // TODO 尝试错误恢复，将错误保存起来
-                        throw new Exception();
+                        result.AppendError(new CompileError(string.Empty,
+                            lineForward,
+                            (int)(lexemeBegin - positionOnNewLine),
+                            (int)(forward - lexemeBegin),
+                            "非法的词法单元"));
+                        // TODO 尝试错误恢复
                     }
                 }
                 if (c.Equals('\0'))
@@ -136,6 +145,22 @@ namespace Compiler.Lexical
                 return '\0';
             else
                 return (char)readIn;
+        }
+
+        internal class Result
+        {
+            public List<Token> Tokens = new List<Token>();
+            public List<CompileError> Errors = new List<CompileError>();
+
+            public void AppendToken(Token token)
+            {
+                Tokens.Add(token);
+            }
+
+            public void AppendError(CompileError error)
+            {
+                Errors.Add(error);
+            }
         }
     }
 }
