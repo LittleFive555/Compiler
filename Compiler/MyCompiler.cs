@@ -17,8 +17,9 @@ namespace Compiler
             allLexicalRegex.AddRange(LexicalRegexLoader.ReadRegexFromFile(LexicalType.Other, lexicalDefineFile));
             allLexicalRegex.AddRange(LexicalRegexLoader.ReadRegexFromFile(LexicalType.Symbol, symbolDefineFile));
             allLexicalRegex.AddRange(LexicalRegexLoader.ReadRegexFromFile(LexicalType.ReservedWord, reservedWordDefineFile));
-
             allLexicalRegex.Add(new LexicalRegex(Helpers.SingleLineCommentName, Helpers.SingleLineCommentRegex, LexicalType.Comment, 1000));
+            allLexicalRegex.Add(new LexicalRegex(Helpers.BlockCommentLeftName, Helpers.BlockCommentLeftRegex, LexicalType.Comment, 1001));
+            allLexicalRegex.Add(new LexicalRegex(Helpers.BlockCommentRightName, Helpers.BlockCommentRightRegex, LexicalType.Comment, 1002));
             m_lexicalAnalyzer = new LexicalAnalyzer(allLexicalRegex.ToArray());
 
             var syntaxLines = SyntaxReader.ReadFromFile(syntaxDefineFile);

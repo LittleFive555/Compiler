@@ -9,7 +9,7 @@ else if (a) {
 }
 else if (b) {
 }
-else{
+else{ /* this is a block comment */
 
 }
 

@@ -28,6 +28,7 @@ namespace Compiler.Lexical
             LexicalUnit? lexicalUnit = null;
 
             bool isSingleLineComment = false;
+            bool isBlockComment = false;
 
             while (true)
             {
@@ -37,7 +38,7 @@ namespace Compiler.Lexical
 
                 if (isSingleLineComment)
                 {
-                    if (c == '\n')
+                    if (c == '\n' || c == '\0')
                     {
                         isSingleLineComment = false;
 
@@ -49,7 +50,30 @@ namespace Compiler.Lexical
                         result.AppendToken(token);
 
                         currentDFAStateId = m_dfa.StartState;
-                        lineForward = lineOnLastReceive;
+                        stringBuilder.Clear();
+                        lexemeBegin = stream.Position;
+                        lexicalUnit = null;
+                    }
+                    continue;
+                }
+                else if (isBlockComment)
+                {
+                    if ((c == '*' && PeekChar(stream) == '/') || c == '\0')
+                    {
+                        isBlockComment = false;
+
+                        c = ReadChar(stream);
+                        forward = stream.Position;
+                        stringBuilder.Append(c);
+
+                        Token token = new Token(stringBuilder.ToString(),
+                            new LexicalUnit(Helpers.BlockCommentName, LexicalType.Comment, 1001),
+                            lineForward,
+                            (int)(lexemeBegin - positionOnNewLine),
+                            (int)(forward - lexemeBegin));
+                        result.AppendToken(token);
+
+                        currentDFAStateId = m_dfa.StartState;
                         stringBuilder.Clear();
                         lexemeBegin = stream.Position;
                         lexicalUnit = null;
@@ -97,11 +121,9 @@ namespace Compiler.Lexical
                             }
                         }
                         else if (lexicalUnits.Values[lexicalUnits.Count - 1].Name == Helpers.SingleLineCommentName)
-                        {
                             isSingleLineComment = true;
-                            lastReceivePos = forward;
-                            lineOnLastReceive = lineForward;
-                        }
+                        else if (lexicalUnits.Values[lexicalUnits.Count - 1].Name == Helpers.BlockCommentLeftName)
+                            isBlockComment = true;
                         else
                         {
                             lexicalUnit = lexicalUnits.Values[lexicalUnits.Count - 1];
@@ -172,6 +194,14 @@ namespace Compiler.Lexical
                 return '\0';
             else
                 return (char)readIn;
+        }
+
+        private static char PeekChar(Stream stream)
+        {
+            long lastPosition = stream.Position;
+            char c = ReadChar(stream);
+            stream.Position = lastPosition;
+            return c;
         }
 
         internal class Result

@@ -7,4 +7,10 @@
 
     public const string SingleLineCommentName = "SingleLineComment";
     public const string SingleLineCommentRegex = "//";
+
+    public const string BlockCommentName = "BlockComment";
+    public const string BlockCommentLeftName = "BlockCommentLeft";
+    public const string BlockCommentLeftRegex = "/\\*";
+    public const string BlockCommentRightName = "BlockCommentRight";
+    public const string BlockCommentRightRegex = "\\*/";
 }
