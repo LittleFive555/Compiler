@@ -47,6 +47,12 @@ namespace Compiler.Syntax
                 }
                 Console.WriteLine(stringBuilder.ToString());
 
+                if (tokens[Math.Clamp(index, 0, tokens.Count - 1)].LexicalUnit.LexicalType == LexicalType.Comment)
+                {
+                    index++;
+                    continue;
+                }
+
                 string currentTokenName = index < tokens.Count ? tokens[index].LexicalUnit.Name : EndSymbol;
                 if (currentSymbol.Equals(currentTokenName))
                 {

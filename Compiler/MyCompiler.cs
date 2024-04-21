@@ -18,6 +18,7 @@ namespace Compiler
             allLexicalRegex.AddRange(LexicalRegexLoader.ReadRegexFromFile(LexicalType.Symbol, symbolDefineFile));
             allLexicalRegex.AddRange(LexicalRegexLoader.ReadRegexFromFile(LexicalType.ReservedWord, reservedWordDefineFile));
 
+            allLexicalRegex.Add(new LexicalRegex(Helpers.SingleLineCommentName, Helpers.SingleLineCommentRegex, LexicalType.Comment, 1000));
             m_lexicalAnalyzer = new LexicalAnalyzer(allLexicalRegex.ToArray());
 
             var syntaxLines = SyntaxReader.ReadFromFile(syntaxDefineFile);
@@ -33,6 +34,11 @@ namespace Compiler
         {
             AnalyzeResult analyzeResult = new AnalyzeResult();
             var result = m_lexicalAnalyzer.Read(stream);
+
+            //Console.WriteLine("Tokens:");
+            //foreach (var token in result.Tokens)
+            //    Console.WriteLine(token);
+
             analyzeResult.CompileErrors = result.Errors;
 
             if (result.Errors.Count > 0)

@@ -2,7 +2,7 @@ var b = 3
 var c = 100.15
 a = b + c
 
-if (a == b) {
+if (a == b) { // this is a comment
 
 }
 else if (a) {

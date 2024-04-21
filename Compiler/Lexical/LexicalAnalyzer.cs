@@ -26,11 +26,36 @@ namespace Compiler.Lexical
             StringBuilder stringBuilder = new StringBuilder();
             int currentDFAStateId = m_dfa.StartState;
             LexicalUnit? lexicalUnit = null;
+
+            bool isSingleLineComment = false;
+
             while (true)
             {
                 char c = ReadChar(stream);
                 long forward = stream.Position;
                 stringBuilder.Append(c);
+
+                if (isSingleLineComment)
+                {
+                    if (c == '\n')
+                    {
+                        isSingleLineComment = false;
+
+                        Token token = new Token(stringBuilder.ToString(),
+                            new LexicalUnit(Helpers.SingleLineCommentName, LexicalType.Comment, 1000),
+                            lineForward,
+                            (int)(lexemeBegin - positionOnNewLine),
+                            (int)(forward - lexemeBegin));
+                        result.AppendToken(token);
+
+                        currentDFAStateId = m_dfa.StartState;
+                        lineForward = lineOnLastReceive;
+                        stringBuilder.Clear();
+                        lexemeBegin = stream.Position;
+                        lexicalUnit = null;
+                    }
+                    continue;
+                }
 
                 if (c == '\n')
                 {
@@ -70,6 +95,12 @@ namespace Compiler.Lexical
                                     string.Format("发现未配对的字符串符号 {0}", strStart)));
                                 // TODO 进行错误恢复
                             }
+                        }
+                        else if (lexicalUnits.Values[lexicalUnits.Count - 1].Name == Helpers.SingleLineCommentName)
+                        {
+                            isSingleLineComment = true;
+                            lastReceivePos = forward;
+                            lineOnLastReceive = lineForward;
                         }
                         else
                         {

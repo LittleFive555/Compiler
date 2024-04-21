@@ -5,6 +5,7 @@
         Symbol,
         ReservedWord,
         Whitespace,
+        Comment,
         Other,
     }
 
