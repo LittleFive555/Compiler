@@ -36,9 +36,9 @@ namespace Compiler
             AnalyzeResult analyzeResult = new AnalyzeResult();
             var result = m_lexicalAnalyzer.Read(stream);
 
-            //Console.WriteLine("Tokens:");
-            //foreach (var token in result.Tokens)
-            //    Console.WriteLine(token);
+            MyLogger.WriteLine("Tokens:");
+            foreach (var token in result.Tokens)
+                MyLogger.WriteLine(token);
 
             analyzeResult.CompileErrors = result.Errors;
 

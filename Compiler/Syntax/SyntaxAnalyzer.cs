@@ -45,7 +45,7 @@ namespace Compiler.Syntax
                     stringBuilder.Append(stackList[i]);
                     stringBuilder.Append(" ");
                 }
-                Console.WriteLine(stringBuilder.ToString());
+                MyLogger.WriteLine(stringBuilder.ToString());
 
                 if (tokens[Math.Clamp(index, 0, tokens.Count - 1)].LexicalUnit.LexicalType == LexicalType.Comment)
                 {
@@ -105,40 +105,40 @@ namespace Compiler.Syntax
             EliminateLeftRecursion();
             ExtractLeftCommonFactor();
 
-            //foreach (var syntaxLine in m_syntaxLines.Values)
-            //{
-            //    Console.WriteLine(syntaxLine.ToString());
-            //}
+            foreach (var syntaxLine in m_syntaxLines.Values)
+            {
+                MyLogger.WriteLine(syntaxLine.ToString());
+            }
 
             var firstSet = FirstSet();
-            //Console.WriteLine("FirstSet:");
-            //foreach (var set in firstSet)
-            //{
-            //    StringBuilder stringBuilder = new StringBuilder();
-            //    stringBuilder.Append(set.Key);
-            //    stringBuilder.Append(": ");
-            //    foreach (var symbol in set.Value)
-            //    {
-            //        stringBuilder.Append(symbol.ToString());
-            //        stringBuilder.Append(" ");
-            //    }
-            //    Console.WriteLine(stringBuilder.ToString());
-            //}
+            MyLogger.WriteLine("FirstSet:");
+            foreach (var set in firstSet)
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(set.Key);
+                stringBuilder.Append(": ");
+                foreach (var symbol in set.Value)
+                {
+                    stringBuilder.Append(symbol.ToString());
+                    stringBuilder.Append(" ");
+                }
+                MyLogger.WriteLine(stringBuilder.ToString());
+            }
 
             var followSet = FollowSet(firstSet);
-            //Console.WriteLine("FollowSet:");
-            //foreach (var set in followSet)
-            //{
-            //    StringBuilder stringBuilder = new StringBuilder();
-            //    stringBuilder.Append(set.Key);
-            //    stringBuilder.Append(": ");
-            //    foreach (var symbol in set.Value)
-            //    {
-            //        stringBuilder.Append(symbol.ToString());
-            //        stringBuilder.Append(" ");
-            //    }
-            //    Console.WriteLine(stringBuilder.ToString());
-            //}
+            MyLogger.WriteLine("FollowSet:");
+            foreach (var set in followSet)
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(set.Key);
+                stringBuilder.Append(": ");
+                foreach (var symbol in set.Value)
+                {
+                    stringBuilder.Append(symbol.ToString());
+                    stringBuilder.Append(" ");
+                }
+                MyLogger.WriteLine(stringBuilder.ToString());
+            }
 
             if (!IsValidLL1())
             {
@@ -581,7 +581,7 @@ namespace Compiler.Syntax
                 }
                 stringBuilder.AppendLine();
             }
-            Console.WriteLine(stringBuilder.ToString());
+            MyLogger.WriteLine(stringBuilder.ToString());
         }
     }
 }

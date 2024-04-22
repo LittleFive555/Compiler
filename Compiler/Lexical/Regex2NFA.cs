@@ -72,8 +72,8 @@ namespace Compiler.Lexical
         public static FA? Execute(params LexicalRegex[] lexicalRegexs)
         {
             ReplaceRegex(lexicalRegexs);
-            //foreach (var regex in lexicalRegexs)
-            //    Console.WriteLine(regex.ToString());
+            foreach (var regex in lexicalRegexs)
+                MyLogger.WriteLine(regex.ToString());
 
             List<FA> nfaList = new List<FA>();
             foreach (var lexicalRegex in lexicalRegexs)

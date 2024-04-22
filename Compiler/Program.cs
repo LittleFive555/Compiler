@@ -9,9 +9,9 @@
                 "E:\\SourceCode\\Compiler\\File\\ReservedWord.txt",
                 "E:\\SourceCode\\Compiler\\File\\LexerDefine.txt",
                 "E:\\SourceCode\\Compiler\\File\\SyntaxDefine.txt");
-            var result = myCompiler.Analyze("E:\\SourceCode\\Compiler\\ScorpioScript\\Test1.sco");
+            var result = myCompiler.Analyze("E:\\Dragonscapes\\Client\\Assets\\ScriptScorpio\\Game\\UI\\UIDragonMerchant\\UIDragonMerchantStore.sco");
             foreach (var error in result.CompileErrors)
-                Console.WriteLine(error);
+                MyLogger.WriteLine(error);
         }
     }
 }
