@@ -4,12 +4,12 @@
     {
         public static void WriteLine(string message)
         {
-            //Console.WriteLine(message);
+            Console.WriteLine(message);
         }
 
         public static void WriteLine(object obj)
         {
-            //Console.WriteLine(obj.ToString());
+            Console.WriteLine(obj.ToString());
         }
     }
 }

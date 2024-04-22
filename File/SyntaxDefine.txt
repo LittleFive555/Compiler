@@ -7,7 +7,7 @@ MultiStatement: Statement MultiStatement | Statement
 
 SemicolonOrNot: Semicolon
 
-Statement:    AssignStatement    |     CodeBlock     |     Function Statement2      |     IfStatement     |     ForStatement     |     ForeachStatement | WhileStatement | ClassStatement | ReturnStatement | BreakStatement | ContinueStatement | SwitchStatement | CaseStatement | DefaultStatement | TryStatement | ThrowStatement | AwaitStatement | AsyncStatement
+Statement:    AssignStatement    |     CodeBlock     |     Function Statement2      |     IfStatement     |     ForStatement     |     ForeachStatement | WhileStatement | ClassStatement | ReturnStatement | BreakStatement | ContinueStatement | SwitchStatement | CaseStatement | DefaultStatement | TryStatement | ThrowStatement | AwaitStatement | AsyncStatement | FunctionCallStatement
 
 
 Statement2:Identifier FunctionParams CodeBlock | FunctionParams CodeBlock
@@ -26,21 +26,24 @@ Operation3: Operation3 Equal Operation4 | Operation3 NotEqual Operation4 | Opera
 
 Operation4: Operation4 Plus Operation5 | Operation4 Minus Operation5 | Operation5
 
-Operation5: Operation5 Multiply Factor | Operation5 Divide Factor | Operation5 Modulo Factor | Factor 
+Operation5: Operation5 Multiply Operation6 | Operation5 Divide Operation6 | Operation5 Modulo Operation6 | Operation6 
+
+Operation6: Operation6 EmptyRet Factor | Factor
 
 Factor: Object | LeftPar Value RightPar
 
 
 
 // 声明和赋值
-AssignStatement: Var CanAssignValue CanAssignValueList AssignValue | CanAssignValue AssignStatement1
+AssignStatement: Var CanAssignValue CanAssignValueList AssignValue | CanAssignValue AssignStatement1 | DoublePlus CanAssignValue | DoubleMinus CanAssignValue
 
-AssignStatement1:Comma CanAssignValue CanAssignValueList AssignValue | AssignSymbol Value | LeftPar FunctionParamsRight AssignStatement11 | CallMember | IndexMember | ·
+AssignStatement1:Comma CanAssignValue CanAssignValueList AssignValue | AssignSymbol Value | LeftPar FunctionParamsRight AssignStatement11 | DoublePlus | DoubleMinus | ·
 
 AssignStatement11:CodeBlock | ·
 
 CanAssignValue: Identifier CanAssignValue1 | MultiAssign CanAssignValue1
-CanAssignValue1: CallMemberNoFunction CanAssignValue1 | IndexMember CanAssignValue1 | ·
+
+CanAssignValue1: CallMember CanAssignValue1 | IndexMember CanAssignValue1 | ·
 
 MultiAssign: LeftBracket Identifier MultiAssign1
 
@@ -60,17 +63,21 @@ AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign 
 
 
 
-Object: Number | Identifier | Boolean | Identifier FunctionOrMember | String | MapObject | ArrayObject | Null | Minus Object | Not Object | FunctionParams Lambda CodeBlock
+Object: Number | Identifier | Boolean | Identifier FunctionOrMember | String | MapObject | ArrayObject | Null | Minus Object | Not Object | FunctionParams Lambda CodeBlock | New Identifier FunctionParams
 
 FunctionOrMember: FunctionParams | CallMember | IndexMember
 
 IsFuncCallOrNot: FunctionParams | ·
 
-IndexMember: LeftBracket Value RightBracket IndexMember | LeftBracket Value RightBracket | LeftBracket Value RightBracket CallMember
+IndexMember: LeftBracket Value RightBracket CallMember1
 
-CallMember: Period Identifier IsFuncCallOrNot CallMember | Period Identifier IsFuncCallOrNot | Period Identifier IsFuncCallOrNot IndexMember 
+CallMember: Period Identifier IsFuncCallOrNot CallMember1 | QuestionMarkDot CallMember2
 
-CallMemberNoFunction : Period Identifier CallMember | Period Identifier | Period Identifier IndexMember
+CallMember1: CallMember | IndexMember | ·
+
+CallMember2: Identifier IsFuncCallOrNot CallMember1 | FunctionParams CallMember1
+
+
 
 
 // 函数
@@ -108,9 +115,11 @@ ForStatement: For LeftPar ForPart
 ForPart: AssignStatement ForNormalPartTwo | ForNormalPartTwo | Var Identifier AssignValue Comma Value RightPar CodeBlock | Identifier AssignValue Comma Value RightPar CodeBlock
 
 // for语句 for(;;)
-ForNormalPartTwo: Semicolon Value ForNormalPartThree | Semicolon ForNormalPartThree
+ForNormalPartTwo: Semicolon ForNormalPartTwo1
+ForNormalPartTwo1: Value ForNormalPartThree | ForNormalPartThree
 
-ForNormalPartThree: Semicolon MultiStatement RightPar CodeBlock | Semicolon RightPar CodeBlock
+ForNormalPartThree: Semicolon ForNormalPartThree1
+ForNormalPartThree1: MultiStatement RightPar CodeBlock | RightPar CodeBlock
 
 
 
@@ -180,16 +189,25 @@ ImportStatement: Import String
 MultiImportStatement: ImportStatement MultiImportStatement | ImportStatement
 
 
+
 // 数组
-ArrayObject: LeftBracket ArrayMultiObject RightBracket | LeftBracket RightBracket
-ArrayMultiObject: Object Comma ArrayMultiObject | Object Semicolon ArrayMultiObject | Object
+ArrayObject: LeftBracket ArrayObject1
+
+ArrayObject1: Object ArrayMultiObject1 RightBracket | RightBracket
+
+ArrayMultiObject: Object ArrayMultiObject1
+
+ArrayMultiObject1: Comma ArrayMultiObject | Semicolon ArrayMultiObject | ·
+
 
 
 // map
 MapObject: LeftBrace MultiMapAssignStatements RightBrace | LeftBrace RightBrace
 
 MultiMapAssignStatements: MapAssignStatement  MultiMapAssignStatements1
+
 MultiMapAssignStatements1: Comma MultiMapAssignStatements11 | Semicolon MultiMapAssignStatements11 | MultiMapAssignStatements11
+
 MultiMapAssignStatements11: MultiMapAssignStatements | ·
 
 MapAssignStatement: Identifier MapAssignObject | String MapAssignObject | Number MapAssignObject | Boolean MapAssignObject | Identifier | String | Number | Boolean | Function Identifier FunctionParams CodeBlock | Identifier FunctionParams CodeBlock | Function FunctionParams CodeBlock

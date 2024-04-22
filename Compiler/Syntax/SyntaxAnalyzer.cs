@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using Compiler.Lexical;
 
 namespace Compiler.Syntax
@@ -23,6 +24,7 @@ namespace Compiler.Syntax
         {
             Result result = new Result();
 
+            Stack<Snapshot> snapshotStack = new Stack<Snapshot>();
             Stack<string> stack = new Stack<string>();
             stack.Push(EndSymbol);
             stack.Push(StartSymbol);
@@ -32,11 +34,18 @@ namespace Compiler.Syntax
             int counter = 0;
             while (currentSymbol != EndSymbol)
             {
+                #region 输出
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.Append(counter++);
                 stringBuilder.Append(" : ");
+                int line = 0;
                 for (int i = 0; i < index && i < tokens.Count; i++)
                 {
+                    if (line != tokens[i].Line)
+                    {
+                        stringBuilder.AppendLine();
+                        line = tokens[i].Line;
+                    }
                     stringBuilder.Append(tokens[i].Content);
                     stringBuilder.Append(" ");
                 }
@@ -48,6 +57,7 @@ namespace Compiler.Syntax
                     stringBuilder.Append(" ");
                 }
                 MyLogger.WriteLine(stringBuilder.ToString());
+                #endregion
 
                 if (tokens[Math.Clamp(index, 0, tokens.Count - 1)].LexicalUnit.LexicalType == LexicalType.Comment)
                 {
@@ -60,18 +70,34 @@ namespace Compiler.Syntax
                 if (currentSymbol.Equals(currentTokenName))
                 {
                     stack.Pop();
+                    if (snapshotStack.Count > 0 && stack.Count < snapshotStack.Peek().CloneStack.Count)
+                        snapshotStack.Pop();
                     index++;
                 }
                 else if (IsTerminalSymbol(currentSymbol))
                 {
                     result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
 
+                    if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                    {
+                        stack = tempStack;
+                        index = tempIndex;
+                    }
+                    else
+                        throw new Exception();
                     // TODO try fix and continue
                 }
                 else if (!m_predictiveAnylisisTable[currentSymbol].ContainsKey(currentTokenName))
                 {
                     result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
 
+                    if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                    {
+                        stack = tempStack;
+                        index = tempIndex;
+                    }
+                    else
+                        throw new Exception();
                     // TODO try fix and continue
                 }
                 else
@@ -79,19 +105,29 @@ namespace Compiler.Syntax
                     var syntaxProductions = m_predictiveAnylisisTable[currentSymbol][currentTokenName];
                     if (syntaxProductions.Count > 2)
                         throw new Exception();
+
                     Production production;
-                    if (syntaxProductions.Count == 1)
+                    if (syntaxProductions.Count == 1) // 只有一个产生式，选择该产生式
                         production = syntaxProductions[0];
                     else
                     {
-                        if (IsEmptyProduction(syntaxProductions[0]))
-                            production = syntaxProductions[1];
-                        else
+                        if (IsEmptyProduction(syntaxProductions[1])) // 第一个产生式非空，第二个产生式为空，选择非空
                             production = syntaxProductions[0];
+                        else // 两个产生式全非空，则准备回溯（或许可能会当有空产生式时也回溯？）
+                        {
+                            int productionIndex = 0;
+                            var snapshot = new Snapshot(stack, index, productionIndex);
+                            snapshotStack.Push(snapshot);
+                            production = syntaxProductions[productionIndex];
+                        }
                     }
 
                     if (IsEmptyProduction(production))
+                    {
                         stack.Pop();
+                        if (snapshotStack.Count > 0 && stack.Count < snapshotStack.Peek().CloneStack.Count)
+                            snapshotStack.Pop();
+                    }
                     else
                     {
                         stack.Pop();
@@ -102,6 +138,54 @@ namespace Compiler.Syntax
                 currentSymbol = stack.Peek();
             }
             return result;
+        }
+
+        private bool TryRecall(List<Token> tokens, Stack<Snapshot> snapshotStack, out Stack<string> stack, out int index)
+        {
+            while (snapshotStack.Count > 0)
+            {
+                var snapshot = snapshotStack.Peek();
+                var currentToken = tokens[Math.Clamp(snapshot.TokenIndex, 0, tokens.Count - 1)];
+                var currentTokenName = snapshot.TokenIndex < tokens.Count ? currentToken.LexicalUnit.Name : EndSymbol;
+                var currentSymbol = snapshot.CloneStack.Peek();
+                var syntaxProductions = m_predictiveAnylisisTable[currentSymbol][currentTokenName];
+                if (snapshot.ChosenProductionIndex + 1 < syntaxProductions.Count)
+                {
+                    stack = new Stack<string>(snapshot.CloneStack.Reverse());
+                    index = snapshot.TokenIndex;
+
+                    var production = syntaxProductions[++snapshot.ChosenProductionIndex];
+
+                    stack.Pop();
+                    for (int i = production.Symbols.Count - 1; i >= 0; i--)
+                        stack.Push(production.Symbols[i]);
+
+                    return true;
+                }
+                else
+                {
+                    snapshotStack.Pop();
+                }
+            }
+            stack = null;
+            index = -1;
+            return false;
+        }
+
+        class Snapshot
+        {
+            public int StackHeight;
+            public Stack<string> CloneStack;
+            public int TokenIndex;
+            public int ChosenProductionIndex;
+
+            public Snapshot(Stack<string> stack, int tokenIndex, int chosenProductionIndex)
+            {
+                StackHeight = stack.Count;
+                CloneStack = new Stack<string>(stack.Reverse());
+                TokenIndex = tokenIndex;
+                ChosenProductionIndex = chosenProductionIndex;
+            }
         }
 
         private void Initialize()
@@ -557,12 +641,24 @@ namespace Compiler.Syntax
             return table;
         }
 
-        private static void AddToCell(Dictionary<string, List<Production>> currentRow, string symbol, Production production)
+        private void AddToCell(Dictionary<string, List<Production>> currentRow, string symbol, Production production)
         {
             if (!currentRow.ContainsKey(symbol))
                 currentRow.Add(symbol, new List<Production>() { production });
             else
-                currentRow[symbol].Add(production);
+            {
+                if (!currentRow[symbol].Contains(production))
+                    currentRow[symbol].Add(production);
+            }
+
+            currentRow[symbol].Sort((production1, production2) =>
+            {
+                if (IsEmptyProduction(production1))
+                    return 1;
+                else if (IsEmptyProduction(production2))
+                    return -1;
+                return 0;
+            });
         }
 
         private void PrintPredictiveAnalysisTable(Dictionary<string, Dictionary<string, List<Production>>> table)
