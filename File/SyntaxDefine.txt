@@ -1,8 +1,6 @@
 // TODO 现在for的分析表中有多条定义，需要消除
 
-S: MultiStatement | ·
-
-
+S: MultiImportStatement MultiStatement | MultiImportStatement | MultiStatement | ·
 
 // 语句
 MultiStatement: Statement MultiStatement | Statement
@@ -15,7 +13,10 @@ Statement:    AssignStatement    |     CodeBlock     |     Function Statement2  
 Statement2:Identifier FunctionParams CodeBlock | FunctionParams CodeBlock
 
 // 运算
-Value: Operation1
+Value: Operation0
+
+// 三目运算符（目前是优先级最低，可能需要调整）
+Operation0: Operation0 QuestionMark Operation1 Colon Operation1 | Operation1
 
 Operation1: Operation1 And Operation2 | Operation1 Minus Operation2 | Operation2 
 
@@ -38,7 +39,8 @@ AssignStatement1:Comma CanAssignValue CanAssignValueList AssignValue | AssignSym
 
 AssignStatement11:CodeBlock | ·
 
-CanAssignValue: Identifier | Identifier CallMember | Identifier IndexMember | MultiAssign
+CanAssignValue: Identifier CanAssignValue1 | MultiAssign CanAssignValue1
+CanAssignValue1: CallMemberNoFunction CanAssignValue1 | IndexMember CanAssignValue1 | ·
 
 MultiAssign: LeftBracket Identifier MultiAssign1
 
@@ -58,16 +60,17 @@ AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign 
 
 
 
-Object: Number | Identifier | Boolean | Identifier FunctionOrMember | String
+Object: Number | Identifier | Boolean | Identifier FunctionOrMember | String | MapObject | ArrayObject | Null | Minus Object | Not Object | FunctionParams Lambda CodeBlock
 
 FunctionOrMember: FunctionParams | CallMember | IndexMember
 
 IsFuncCallOrNot: FunctionParams | ·
 
-IndexMember: LeftBracket Value RightBracket IndexMember | LeftBracket Value RightBracket
+IndexMember: LeftBracket Value RightBracket IndexMember | LeftBracket Value RightBracket | LeftBracket Value RightBracket CallMember
 
-CallMember: Period Identifier IsFuncCallOrNot CallMember | Period Identifier IsFuncCallOrNot
+CallMember: Period Identifier IsFuncCallOrNot CallMember | Period Identifier IsFuncCallOrNot | Period Identifier IsFuncCallOrNot IndexMember 
 
+CallMemberNoFunction : Period Identifier CallMember | Period Identifier | Period Identifier IndexMember
 
 
 // 函数
@@ -168,3 +171,27 @@ ThrowStatement: Throw Value
 // 异步
 AwaitStatement: Await Value
 AsyncStatement: Async FunctionDefine
+
+
+
+// import
+ImportStatement: Import String
+
+MultiImportStatement: ImportStatement MultiImportStatement | ImportStatement
+
+
+// 数组
+ArrayObject: LeftBracket ArrayMultiObject RightBracket | LeftBracket RightBracket
+ArrayMultiObject: Object Comma ArrayMultiObject | Object Semicolon ArrayMultiObject | Object
+
+
+// map
+MapObject: LeftBrace MultiMapAssignStatements RightBrace | LeftBrace RightBrace
+
+MultiMapAssignStatements: MapAssignStatement  MultiMapAssignStatements1
+MultiMapAssignStatements1: Comma MultiMapAssignStatements11 | Semicolon MultiMapAssignStatements11 | MultiMapAssignStatements11
+MultiMapAssignStatements11: MultiMapAssignStatements | ·
+
+MapAssignStatement: Identifier MapAssignObject | String MapAssignObject | Number MapAssignObject | Boolean MapAssignObject | Identifier | String | Number | Boolean | Function Identifier FunctionParams CodeBlock | Identifier FunctionParams CodeBlock | Function FunctionParams CodeBlock
+
+MapAssignObject : Assign Object | Colon Object
