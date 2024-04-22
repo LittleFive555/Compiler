@@ -34,24 +34,26 @@ namespace Compiler
         public AnalyzeResult Analyze(Stream stream)
         {
             AnalyzeResult analyzeResult = new AnalyzeResult();
-            var result = m_lexicalAnalyzer.Read(stream);
+            var lexicalResult = m_lexicalAnalyzer.Read(stream);
 
             MyLogger.WriteLine("Tokens:");
-            foreach (var token in result.Tokens)
+            foreach (var token in lexicalResult.Tokens)
                 MyLogger.WriteLine(token);
 
-            analyzeResult.CompileErrors = result.Errors;
+            analyzeResult.CompileErrors.AddRange(lexicalResult.Errors);
 
-            if (result.Errors.Count > 0)
+            if (lexicalResult.Errors.Count > 0)
                 return analyzeResult;
 
-            m_syntaxAnalyzer.Execute(result.Tokens);
+            var syntaxResult = m_syntaxAnalyzer.Execute(lexicalResult.Tokens);
+            analyzeResult.CompileErrors.AddRange(syntaxResult.Errors);
+
             return analyzeResult;
         }
     }
 
     public class AnalyzeResult
     {
-        public List<CompileError> CompileErrors;
+        public List<CompileError> CompileErrors = new List<CompileError>();
     }
 }

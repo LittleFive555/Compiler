@@ -112,10 +112,9 @@ namespace Compiler.Lexical
                             }
                             else
                             {
-                                result.AppendError(new CompileError(string.Empty, 
-                                    lineForward, 
-                                    (int)(lexemeBegin - positionOnNewLine), 
-                                    (int)(forward - lexemeBegin), 
+                                result.AppendError(new CompileError(lineForward,
+                                    (int)(lexemeBegin - positionOnNewLine),
+                                    (int)(forward - lexemeBegin),
                                     string.Format("发现未配对的字符串符号 {0}", strStart)));
                                 // TODO 进行错误恢复
                             }
@@ -156,8 +155,7 @@ namespace Compiler.Lexical
                     }
                     else
                     {
-                        result.AppendError(new CompileError(string.Empty,
-                            lineForward,
+                        result.AppendError(new CompileError(lineForward,
                             (int)(lexemeBegin - positionOnNewLine),
                             (int)(forward - lexemeBegin),
                             "非法的词法单元"));

@@ -19,8 +19,10 @@ namespace Compiler.Syntax
             Initialize();
         }
 
-        public void Execute(List<Token> tokens)
+        public Result Execute(List<Token> tokens)
         {
+            Result result = new Result();
+
             Stack<string> stack = new Stack<string>();
             stack.Push(EndSymbol);
             stack.Push(StartSymbol);
@@ -53,7 +55,8 @@ namespace Compiler.Syntax
                     continue;
                 }
 
-                string currentTokenName = index < tokens.Count ? tokens[index].LexicalUnit.Name : EndSymbol;
+                var currentToken = tokens[Math.Clamp(index, 0, tokens.Count - 1)];
+                string currentTokenName = index < tokens.Count ? currentToken.LexicalUnit.Name : EndSymbol;
                 if (currentSymbol.Equals(currentTokenName))
                 {
                     stack.Pop();
@@ -61,13 +64,15 @@ namespace Compiler.Syntax
                 }
                 else if (IsTerminalSymbol(currentSymbol))
                 {
-                    // TODO add error info, try fix and continue
-                    throw new Exception();
+                    result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
+
+                    // TODO try fix and continue
                 }
                 else if (!m_predictiveAnylisisTable[currentSymbol].ContainsKey(currentTokenName))
                 {
-                    // TODO add error info, try fix and continue
-                    throw new Exception();
+                    result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
+
+                    // TODO try fix and continue
                 }
                 else
                 {
@@ -96,6 +101,7 @@ namespace Compiler.Syntax
                 }
                 currentSymbol = stack.Peek();
             }
+            return result;
         }
 
         private void Initialize()
@@ -146,7 +152,7 @@ namespace Compiler.Syntax
             }
 
             m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
-            //PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
+            PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
         }
 
         /// <summary>
@@ -582,6 +588,16 @@ namespace Compiler.Syntax
                 stringBuilder.AppendLine();
             }
             MyLogger.WriteLine(stringBuilder.ToString());
+        }
+
+        internal class Result
+        {
+            public List<CompileError> Errors = new List<CompileError>();
+
+            public void AppendError(CompileError error)
+            {
+                Errors.Add(error);
+            }
         }
     }
 }
