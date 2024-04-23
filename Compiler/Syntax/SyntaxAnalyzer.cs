@@ -76,29 +76,31 @@ namespace Compiler.Syntax
                 }
                 else if (IsTerminalSymbol(currentSymbol))
                 {
-                    result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
-
                     if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
                     {
                         stack = tempStack;
                         index = tempIndex;
                     }
                     else
+                    {
+                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
+                        // TODO try fix and continue
                         throw new Exception();
-                    // TODO try fix and continue
+                    }
                 }
                 else if (!m_predictiveAnylisisTable[currentSymbol].ContainsKey(currentTokenName))
                 {
-                    result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
-
                     if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
                     {
                         stack = tempStack;
                         index = tempIndex;
                     }
                     else
+                    {
+                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
+                        // TODO try fix and continue
                         throw new Exception();
-                    // TODO try fix and continue
+                    }
                 }
                 else
                 {
@@ -201,22 +203,25 @@ namespace Compiler.Syntax
             }
 
             var firstSet = FirstSet();
-            MyLogger.WriteLine("FirstSet:");
-            foreach (var set in firstSet)
-            {
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.Append(set.Key);
-                stringBuilder.Append(": ");
-                foreach (var symbol in set.Value)
-                {
-                    stringBuilder.Append(symbol.ToString());
-                    stringBuilder.Append(" ");
-                }
-                MyLogger.WriteLine(stringBuilder.ToString());
-            }
+            PrintFirstOrFollowSet("First", firstSet);
 
             var followSet = FollowSet(firstSet);
-            MyLogger.WriteLine("FollowSet:");
+            PrintFirstOrFollowSet("Follow", followSet);
+
+            if (!IsValidLL1())
+            {
+                throw new Exception();
+            }
+
+            m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
+            //PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
+        }
+
+        private static void PrintFirstOrFollowSet(string setName,Dictionary<string, HashSet<string>> followSet)
+        {
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine(setName);
             foreach (var set in followSet)
             {
                 StringBuilder stringBuilder = new StringBuilder();
@@ -229,14 +234,6 @@ namespace Compiler.Syntax
                 }
                 MyLogger.WriteLine(stringBuilder.ToString());
             }
-
-            if (!IsValidLL1())
-            {
-                throw new Exception();
-            }
-
-            m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
-            PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
         }
 
         /// <summary>
@@ -266,7 +263,7 @@ namespace Compiler.Syntax
         private void EliminateLeftRecursion()
         {
             // TODO 是否需要对syntaxLinesList排序？理论上是后面的文法表达式中会使用到前面的文法，前面的文法表达式中不使用后面的文法
-            List<SyntaxLine> newSyntaxLines = new List<SyntaxLine>();
+            Dictionary<string, SyntaxLine> newSyntaxLines = new Dictionary<string, SyntaxLine>();
             var syntaxLinesList = m_syntaxLines.Values.ToList();
             for (int i = 0; i < syntaxLinesList.Count; i++)
             {
@@ -280,11 +277,18 @@ namespace Compiler.Syntax
                         if (production.Symbols[0] == syntaxLinesList[j].Name)
                         {
                             productionsToReplace.Add(production, new List<Production>());
-                            List<Production> newProductions2 = syntaxLinesList[i].Productions;
                             foreach (var production2 in syntaxLinesList[j].Productions)
                             {
                                 Production newProduction = new Production(syntaxLinesList[i].Name);
-                                newProduction.Symbols.AddRange(production2.Symbols);
+                                if (IsEmptyProduction(production2) && production.Symbols.Count >= 2)
+                                {
+
+                                }
+                                else
+                                {
+                                    newProduction.Symbols.AddRange(production2.Symbols);
+                                }
+
                                 for (int k = 1; k < production.Symbols.Count; k++)
                                     newProduction.Symbols.Add(production.Symbols[k]);
                                 productionsToReplace[production].Add(newProduction);
@@ -296,10 +300,27 @@ namespace Compiler.Syntax
                 {
                     syntaxLinesList[i].Productions.Remove(toReplace.Key);
                     syntaxLinesList[i].Productions.AddRange(toReplace.Value);
+                    // 移除多余的空表达式
+                    bool haveOneEmpty = false;
+                    for (int j = 0; j < syntaxLinesList[i].Productions.Count; j++)
+                    {
+                        if (IsEmptyProduction(syntaxLinesList[i].Productions[j]))
+                        {
+                            if (!haveOneEmpty)
+                                haveOneEmpty = true;
+                            else
+                            {
+                                syntaxLinesList[i].Productions.RemoveAt(j);
+                                j--;
+                            }
+                        }
+                    }
                 }
                 // 消除新产生式的直接左递归
                 SyntaxLine newSyntaxLine = new SyntaxLine();
                 newSyntaxLine.Name = string.Format("{0}'", syntaxLinesList[i].Name);
+                while (m_syntaxLines.ContainsKey(newSyntaxLine.Name) || newSyntaxLines.ContainsKey(newSyntaxLine.Name))
+                    newSyntaxLine.Name = string.Format("{0}'", newSyntaxLine.Name);
                 List<Production> notLeftRecursionProductions = new List<Production>();
                 bool haveLeftRecursion = false;
                 foreach (var production in syntaxLinesList[i].Productions)
@@ -327,7 +348,7 @@ namespace Compiler.Syntax
                     {
                         Symbols = new List<string>() { Helpers.EmptyOperator.ToString() }
                     });
-                    newSyntaxLines.Add(newSyntaxLine);
+                    newSyntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
                     // 给当前修改的文法赋予新的表达式组
                     List<Production> eliminated = new List<Production>();
                     foreach (var aa in notLeftRecursionProductions)
@@ -341,7 +362,7 @@ namespace Compiler.Syntax
                 }
             }
             // 将新产生的文法加入到文法列表中
-            foreach (var newSyntaxLine in newSyntaxLines)
+            foreach (var newSyntaxLine in newSyntaxLines.Values)
                 AddNewSyntaxLine(newSyntaxLine);
         }
 
@@ -364,7 +385,7 @@ namespace Compiler.Syntax
                     {
                         SyntaxLine newSyntaxLine = new SyntaxLine();
                         newSyntaxLine.Name = string.Format("{0}'", syntaxLine.Name);
-                        while (newSyntaxLines.ContainsKey(newSyntaxLine.Name))
+                        while (m_syntaxLines.ContainsKey(newSyntaxLine.Name) || newSyntaxLines.ContainsKey(newSyntaxLine.Name))
                             newSyntaxLine.Name = string.Format("{0}'", newSyntaxLine.Name);
 
                         // 获取需要移除的具有左公因子的表达式，并生成新文法的所有表达式
@@ -544,51 +565,56 @@ namespace Compiler.Syntax
         /// <returns></returns>
         private Dictionary<string, HashSet<string>> FollowSet(Dictionary<string, HashSet<string>> firstSet)
         {
-            Dictionary<string, HashSet<string>> followSet = new Dictionary<string, HashSet<string>>();
-
-            foreach (var nonTernimalSymbol in m_syntaxLines.Keys)
-                SymbolFollowSetRecursively(firstSet, followSet, nonTernimalSymbol);
-
-            return followSet;
-        }
-
-        private void SymbolFollowSetRecursively(Dictionary<string, HashSet<string>> firstSet, Dictionary<string, HashSet<string>> followSet, string nonTernimalSymbol)
-        {
-            if (followSet.ContainsKey(nonTernimalSymbol))
-                return;
-
-            if (nonTernimalSymbol.Equals(StartSymbol))
-                followSet.Add(nonTernimalSymbol, new HashSet<string>() { EndSymbol });
-            else
+            Dictionary<string, HashSet<string>> followSet = new Dictionary<string, HashSet<string>>
             {
-                followSet.Add(nonTernimalSymbol, new HashSet<string>());
-                foreach (var syntaxLine in m_syntaxLines.Values)
+                { StartSymbol, new HashSet<string>() { EndSymbol } }
+            };
+
+            bool haveNew = true;
+            while (haveNew)
+            {
+                haveNew = false;
+                foreach (var nonTerminalSymbol in m_syntaxLines.Keys)
                 {
-                    foreach (var production in syntaxLine.Productions)
+                    if (!followSet.ContainsKey(nonTerminalSymbol))
+                        followSet.Add(nonTerminalSymbol, new HashSet<string>());
+                    foreach (var syntaxLine in m_syntaxLines.Values)
                     {
-                        for (int i = 0; i < production.Symbols.Count; i++)
+                        foreach (var production in syntaxLine.Productions)
                         {
-                            var currentSymbol = production.Symbols[i];
-                            if (currentSymbol.Equals(nonTernimalSymbol) && i + 1 < production.Symbols.Count)
+                            for (int i = 0; i < production.Symbols.Count; i++)
                             {
-                                var nextSymbol = production.Symbols[i + 1];
-                                followSet[nonTernimalSymbol].UnionWith(firstSet[nextSymbol]);
-                                if (followSet[nonTernimalSymbol].Contains(Helpers.EmptyOperator.ToString()))
-                                    followSet[nonTernimalSymbol].Remove(Helpers.EmptyOperator.ToString());
-                            }
-                            if (currentSymbol.Equals(nonTernimalSymbol) && i + 1 == production.Symbols.Count
-                                || i + 1 < production.Symbols.Count && firstSet[production.Symbols[i + 1]].Contains(Helpers.EmptyOperator.ToString()))
-                            {
-                                if (followSet.ContainsKey(syntaxLine.Name))
+                                var currentSymbol = production.Symbols[i];
+                                if (currentSymbol.Equals(nonTerminalSymbol) && i + 1 < production.Symbols.Count)
                                 {
-                                    SymbolFollowSetRecursively(firstSet, followSet, syntaxLine.Name);
-                                    followSet[nonTernimalSymbol].UnionWith(followSet[syntaxLine.Name]);
+                                    var nextSymbol = production.Symbols[i + 1];
+                                    var firstSetWithoutEmpty = firstSet[nextSymbol];
+                                    firstSetWithoutEmpty.ExceptWith(new HashSet<string>() { Helpers.EmptyOperator.ToString() });
+                                    if (!followSet[nonTerminalSymbol].IsSupersetOf(firstSetWithoutEmpty))
+                                    {
+                                        haveNew = true;
+                                        followSet[nonTerminalSymbol].UnionWith(firstSetWithoutEmpty);
+                                    }
+                                }
+                                if ((currentSymbol.Equals(nonTerminalSymbol) && i + 1 == production.Symbols.Count)
+                                    || (i + 1 < production.Symbols.Count && firstSet[production.Symbols[i + 1]].Contains(Helpers.EmptyOperator.ToString())))
+                                {
+                                    if (followSet.ContainsKey(syntaxLine.Name))
+                                    {
+                                        if (!followSet[nonTerminalSymbol].IsSupersetOf(followSet[syntaxLine.Name]))
+                                        {
+                                            haveNew = true;
+                                            followSet[nonTerminalSymbol].UnionWith(followSet[syntaxLine.Name]);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+
+            return followSet;
         }
 
         #endregion
