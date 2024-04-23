@@ -58,22 +58,16 @@ AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign 
 
 CanAssignValue: Identifier CanAssignValue1 | MultiAssign CanAssignValue1
 
-AssignStatement: Var CanAssignValue CanAssignValueList AssignValue | Identifier AssignOrCallFunc | MultiAssign CanAssignValue1 AssignStatement1 | DoublePlus CanAssignValue | DoubleMinus CanAssignValue
-
-AssignOrCallFunc: CallMember AssignOrCallFunc1 | IndexMember AssignOrCallFunc1 | Comma CanAssignValue CanAssignValueList AssignValue | AssignSymbol Value | FunctionParams AssignOrCallFunc3 | DoublePlus | DoubleMinus | ·
-
-AssignOrCallFunc1: CanAssignValue1 AssignStatement1 | Period Identifier FunctionParams
-
-AssignOrCallFunc3: AssignStatement11 | CallMember Period Identifier FunctionParams | IndexMember Period Identifier FunctionParams | ·
+AssignStatement: Var CanAssignValue CanAssignValueList AssignValue | CanAssignValue AssignStatement1 | DoublePlus CanAssignValue | DoubleMinus CanAssignValue
 
 AssignStatement1:Comma CanAssignValue CanAssignValueList AssignValue | AssignSymbol Value | LeftPar FunctionParamsRight AssignStatement11 | DoublePlus | DoubleMinus | ·
 
 AssignStatement11:CodeBlock | ·
 
 
-MultiAssign: LeftBracket Identifier MultiAssign1
+MultiAssign: LeftBrace Identifier MultiAssign1
 
-MultiAssign1: RightBracket | Comma IdentifierList RightBracket
+MultiAssign1: RightBrace | Comma IdentifierList RightBrace
 
 IdentifierList: Identifier IdentifierList1 | ·
 
@@ -95,6 +89,18 @@ CanAssignValueList: Comma CanAssignValue CanAssignValueList | ·
 FunctionDefine : Function Identifier FunctionParams CodeBlock | Identifier FunctionParams CodeBlock | Function FunctionParams CodeBlock
 
 FunctionParamsRight: ValueList RightPar | RightPar
+
+FunctionCall: Identifier FunctionCall2
+
+FunctionCall2: FunctionParams FunctionCall21 | FunctionCall1
+
+FunctionCall1: Period Identifier FunctionCall11 | LeftBracket Value RightBracket FunctionCall1 
+
+FunctionCall11: FunctionParams FunctionCall111 | FunctionCall1
+
+FunctionCall111: FunctionCall1 | ·
+
+FunctionCall21: FunctionCall1 | ·
 
 // 布尔值
 Boolean : True | False
@@ -216,7 +222,7 @@ MapAssignStatement3: Identifier FunctionParams CodeBlock MultiMapAssignStatement
 
 
 
-Statement:    AssignStatement    |     CodeBlock     |     Function Statement2      |     IfStatement     |     ForStatement     |     ForeachStatement | WhileStatement | ClassStatement | ReturnStatement | BreakStatement | ContinueStatement | SwitchStatement | CaseStatement | DefaultStatement | TryStatement | ThrowStatement | AwaitStatement | AsyncStatement
+Statement:    AssignStatement    |     CodeBlock     |     Function Statement2      |     IfStatement     |     ForStatement     |     ForeachStatement | WhileStatement | ClassStatement | ReturnStatement | BreakStatement | ContinueStatement | SwitchStatement | CaseStatement | DefaultStatement | TryStatement | ThrowStatement | AwaitStatement | AsyncStatement | FunctionCall
 
 // 语句
 MultiStatement: Statement MultiStatement1
