@@ -17,7 +17,7 @@
 
         public override string ToString()
         {
-            return string.Format("Error (Line:{1}, Column:{2}):{3}", Line, Column, Info);
+            return string.Format("Error (Line:{0}, Column:{1}):{2}", Line, Column, Info);
         }
     }
 }
