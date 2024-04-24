@@ -648,7 +648,7 @@ namespace Compiler.Syntax
                                 if (currentSymbol.Equals(nonTerminalSymbol) && i + 1 < production.Symbols.Count)
                                 {
                                     var nextSymbol = production.Symbols[i + 1];
-                                    var firstSetWithoutEmpty = firstSet[nextSymbol];
+                                    var firstSetWithoutEmpty = new HashSet<string>(firstSet[nextSymbol]);
                                     firstSetWithoutEmpty.ExceptWith(new HashSet<string>() { Helpers.EmptyOperator.ToString() });
                                     if (!followSet[nonTerminalSymbol].IsSupersetOf(firstSetWithoutEmpty))
                                     {
