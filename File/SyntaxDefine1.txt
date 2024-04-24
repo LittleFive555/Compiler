@@ -3,10 +3,12 @@ S: MultiImportStatement MultiStatement | MultiImportStatement | MultiStatement |
 // 语句
 MultiStatement: Statement MultiStatement | Statement $
 
-Statement: AssignStatement |
-		   CodeBlock |     
-		   Function Identifier FunctionParams CodeBlock |    
-		   Function FunctionParams CodeBlock |     
+Statement: VarAssignStatement |
+		   AssignStatement |
+		   CodeBlock |
+		   FunctionDefine |
+		   FunctionDefineWithoutKeyWord |
+		   FunctionCall |
 		   IfStatement |     
 		   ForStatement |     
 		   ForeachStatement | 
@@ -22,7 +24,6 @@ Statement: AssignStatement |
 		   ThrowStatement | 
 		   AwaitStatement | 
 		   AsyncStatement | 
-		   FunctionCall |
 		   Semicolon $
 
 
@@ -51,7 +52,7 @@ Object: Identifier |
 		MapObject | 
 		AwaitStatement |
 		
-		New Identifier FunctionParams | 
+		New Identifier FunctionCallParams | 
 		
 		Minus Object | 
 		Not Object | 
@@ -153,13 +154,13 @@ FunctionCallParams : LeftPar ValueList RightPar | LeftPar RightPar $
 
 ValueList: Value | ValueList Comma Value $
 
-FunctionCall: Identifier FunctionParams FunctionCall1 | Identifier FunctionCall1 | Identifier FunctionParams $
+FunctionCall: Identifier FunctionCallParams FunctionCall1 | Identifier FunctionCall1 | Identifier FunctionCallParams $
 
-FunctionCall1: Period Identifier FunctionParams FunctionCall1 | 
-			   Period Identifier FunctionParams | 
+FunctionCall1: Period Identifier FunctionCallParams FunctionCall1 | 
+			   Period Identifier FunctionCallParams | 
 			   Period Identifier FunctionCall1 | 
-			   QuestionMarkDot Identifier FunctionParams FunctionCall1 | 
-			   QuestionMarkDot Identifier FunctionParams | 
+			   QuestionMarkDot Identifier FunctionCallParams FunctionCall1 | 
+			   QuestionMarkDot Identifier FunctionCallParams | 
 			   QuestionMarkDot Identifier FunctionCall1 | 
 			   LeftBracket Value RightBracket FunctionCall1 $
 
@@ -215,7 +216,7 @@ ClassContent: LeftBrace ClassMultiFunctionDefine RightBrace | LeftBrace RightBra
 
 ClassMultiFunctionDefine: ClassFunctionDefine ClassMultiFunctionDefine | ClassFunctionDefine $
 
-ClassFunctionDefine: AsyncStatement | Get Identifier FunctionParams CodeBlock | FunctionDefine | FunctionDefineWithoutKeyWord | Semicolon $
+ClassFunctionDefine: AsyncStatement | Get Identifier FunctionDefineParams CodeBlock | FunctionDefine | FunctionDefineWithoutKeyWord | Semicolon $
 
 
 
