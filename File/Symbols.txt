@@ -46,6 +46,7 @@ Less:<
 LessOrEqual:<=
 Params:...
 Lambda:=>
+Macro:#
 
 SingleQuotationMark:'
 DoubleQuotationMarks:"

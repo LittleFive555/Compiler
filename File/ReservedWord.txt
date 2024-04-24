@@ -1,10 +1,10 @@
-MacroDefine:#define
-MacroIf:#if
-MacroIfndef:#ifndef
-MacroElse:#else
-MacroElif:#elif
-MacroEndif:#endif
-Import:#import
+MacroDefine:`Macro`define
+MacroIf:`Macro`if
+MacroIfndef:`Macro`ifndef
+MacroElse:`Macro`else
+MacroElif:`Macro`elif
+MacroEndif:`Macro`endif
+Import:`Macro`import
 
 Var:var|let
 

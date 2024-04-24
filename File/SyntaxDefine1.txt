@@ -1,0 +1,298 @@
+S: MultiImportStatement MultiStatement | MultiImportStatement | MultiStatement | · $
+
+// 语句
+MultiStatement: Statement MultiStatement | Statement $
+
+Statement: AssignStatement |
+		   CodeBlock |     
+		   Function Identifier FunctionParams CodeBlock |    
+		   Function FunctionParams CodeBlock |     
+		   IfStatement |     
+		   ForStatement |     
+		   ForeachStatement | 
+		   WhileStatement | 
+		   ClassStatement | 
+		   ReturnStatement | 
+		   BreakStatement | 
+		   ContinueStatement | 
+		   SwitchStatement | 
+		   CaseStatement | 
+		   DefaultStatement | 
+		   TryStatement | 
+		   ThrowStatement | 
+		   AwaitStatement | 
+		   AsyncStatement | 
+		   FunctionCall |
+		   Semicolon $
+
+
+// 代码块(完善)
+CodeBlock: LeftBrace MultiStatement RightBrace | 
+		   LeftBrace RightBrace $
+		   
+		   
+		   
+
+Object: Identifier | 
+		Identifier CanAssignValue | 
+		FunctionDefine |
+		ClassStatement |
+		LeftPar Value RightPar |
+		FunctionDefineParams Lambda CodeBlock | 
+		Async FunctionDefineParams Lambda CodeBlock | 
+		AsyncStatement |
+		
+		Null | 
+		Boolean | 
+		Number | 
+		String | 
+		
+		ArrayObject | 
+		MapObject | 
+		AwaitStatement |
+		
+		New Identifier FunctionParams | 
+		
+		Minus Object | 
+		Not Object | 
+		Negative Object $
+
+
+
+// 运算(完善)
+Value: Operation0 $
+
+// 三目运算符（目前是优先级最低，可能需要调整）
+Operation0: Operation0 QuestionMark Operation1 Colon Operation1 | 
+			Operation1 $
+
+Operation1: Operation1 And Operation2 | 
+			Operation1 Minus Operation2 | 
+			Operation2  $
+
+Operation2: Operation2 InclusiveOr Operation3 | 
+			Operation2 Combine Operation3 | 
+			Operation2 XOR Operation3 | 
+			Operation2 LShift Operation3 | 
+			Operation2 RShift Operation3 | 
+			Operation3 $
+
+Operation3: Operation3 Equal Operation4 | 
+			Operation3 NotEqual Operation4 | 
+			Operation3 EqualReference Operation4 | 
+			Operation3 NotEqualReference Operation4 | 
+			Operation3 Greater Operation4 | 
+			Operation3 GreaterOrEqual Operation4 | 
+			Operation3 Less Operation4 | 
+			Operation3 LessOrEqual Operation4 | 
+			Operation4 $
+
+Operation4: Operation4 Plus Operation5 | 
+			Operation4 Minus Operation5 | 
+			Operation5 $
+
+Operation5: Operation5 Multiply Operation6 | 
+			Operation5 Divide Operation6 | 
+			Operation5 Modulo Operation6 | 
+			Operation6  $
+
+Operation6: Operation6 EmptyRet Factor | 
+			Factor $
+		
+Factor: Object | LeftPar Value RightPar $
+
+
+
+// 声明和赋值
+VarAssignStatement: Var IdentifierList AssignSymbol ValueList |
+					Var LeftBrace IdentifierList RightBrace Assign Object $
+
+IdentifierList: Identifier Comma IdentifierList | Identifier $
+
+CanAssignValue: Identifier CanAssignValue1
+				
+
+CanAssignValueList: CanAssignValue Comma CanAssignValueList | CanAssignValue $
+				
+CanAssignValue1: Period Identifier CanAssignValue1 |
+				 LeftBracket Object RightBracket CanAssignValue1 |
+				 FunctionCall CanAssignValue1 |
+				 QuestionMarkDot LeftBracket Object RightBracket CanAssignValue1 |
+				 QuestionMarkDot FunctionCall CanAssignValue1 |
+				 QuestionMarkDot Period Identifier CanAssignValue1 |
+				 Period Identifier |
+				 LeftBracket Object RightBracket |
+				 FunctionCall |
+				 QuestionMarkDot LeftBracket Object RightBracket |
+				 QuestionMarkDot FunctionCall |
+				 QuestionMarkDot Period Identifier $
+
+AssignStatement: CanAssignValueList AssignSymbol ValueList $
+
+AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign | ModuloAssign | CombineAssign | InclusiveOrAssign | XORAssign | ShrAssign | ShiAssign $
+				 
+
+
+
+// 函数定义(完善) 无function关键词和无标识符的，只能是lambda表达式
+FunctionDefine: Function Identifier FunctionDefineParams CodeBlock | 
+				Function FunctionDefineParams CodeBlock | 
+				Function CodeBlock $
+FunctionDefineWithoutKeyWord: Identifier FunctionDefineParams CodeBlock |
+							  Identifier CodeBlock $
+FunctionDefineParams: LeftPar ParamList RightPar | 
+					  LeftPar RightPar $
+ParamList: Identifier Comma ParamList |
+		   Identifier | 
+		   Params Identifier $
+
+
+
+// 函数调用
+FunctionCallParams : LeftPar ValueList RightPar | LeftPar RightPar $
+
+ValueList: Value | ValueList Comma Value $
+
+FunctionCall: Identifier FunctionParams FunctionCall1 | Identifier FunctionCall1 | Identifier FunctionParams $
+
+FunctionCall1: Period Identifier FunctionParams FunctionCall1 | 
+			   Period Identifier FunctionParams | 
+			   Period Identifier FunctionCall1 | 
+			   QuestionMarkDot Identifier FunctionParams FunctionCall1 | 
+			   QuestionMarkDot Identifier FunctionParams | 
+			   QuestionMarkDot Identifier FunctionCall1 | 
+			   LeftBracket Value RightBracket FunctionCall1 $
+
+
+
+// 布尔值(完善)
+Boolean : True | False $
+
+
+
+// if语句(完善)
+IfStatement : If LeftPar Value RightPar CodeBlock |
+			  If LeftPar Value RightPar CodeBlock Else CodeBlock |
+			  If LeftPar Value RightPar CodeBlock ElseIfPart |
+			  If LeftPar Value RightPar CodeBlock ElseIfPart Else CodeBlock $
+
+ElseIfPart : ElseIf LeftPar Value RightPar CodeBlock ElseIfPart | 
+			 ElseIf LeftPar Value RightPar CodeBlock $
+
+
+
+// for语句 (存在间接左递归，会无法判断两种for，可能需要去除间接左递归，或者引入回溯)
+ForStatement: For LeftPar ForPart $
+
+ForPart: MultiStatement ForNormalPartTwo | 
+		 ForNormalPartTwo | 
+		 Var Identifier Assign Value Comma Value RightPar CodeBlock | 
+		 Identifier Assign Value Comma Value RightPar CodeBlock |
+		 Var Identifier Assign Value Comma Value Comma Value RightPar CodeBlock | 
+		 Identifier Assign Value Comma Value Comma Value RightPar CodeBlock $
+
+// for语句 for(;;)
+ForNormalPartTwo: Semicolon Value ForNormalPartThree | Semicolon ForNormalPartThree $
+
+ForNormalPartThree: Semicolon MultiStatement RightPar CodeBlock | Semicolon RightPar CodeBlock $
+
+
+
+// foreach语句(完善)
+ForeachStatement: Foreach LeftPar Var Identifier In Value RightPar CodeBlock | Foreach LeftPar Identifier In Value RightPar CodeBlock $
+
+
+
+// while语句(完善)
+WhileStatement: While LeftPar Value RightPar CodeBlock $
+
+
+
+// class定义(完善)
+ClassStatement: Class Identifier Colon Identifier ClassContent | Class Identifier ClassContent $
+
+ClassContent: LeftBrace ClassMultiFunctionDefine RightBrace | LeftBrace RightBrace $
+
+ClassMultiFunctionDefine: ClassFunctionDefine ClassMultiFunctionDefine | ClassFunctionDefine $
+
+ClassFunctionDefine: AsyncStatement | Get Identifier FunctionParams CodeBlock | FunctionDefine | FunctionDefineWithoutKeyWord | Semicolon $
+
+
+
+// return
+ReturnStatement: Return | Return Value $
+
+
+
+// break(完善)
+BreakStatement: Break $
+
+
+
+// continue(完善)
+ContinueStatement: Continue $
+
+
+
+// switch(完善)
+SwitchStatement: Switch LeftPar Value RightPar CodeBlock $
+
+CaseStatement: Case Value Colon $
+
+DefaultStatement: Default Colon $
+
+
+
+// 异常(完善)
+TryStatement: Try CodeBlock Catch LeftPar Identifier RightPar CodeBlock $
+
+ThrowStatement: Throw Value $
+
+
+
+// 异步(完善)
+AwaitStatement: Await Value $
+AsyncStatement: Async FunctionDefine $
+
+
+
+// import
+ImportStatement: Import String $
+
+MultiImportStatement: ImportStatement MultiImportStatement | ImportStatement $
+
+
+
+// 数组(完善)
+ArrayObject: LeftBracket ArrayMultiObject RightBracket | LeftBracket RightBracket $
+
+ArrayMultiObject: Value Comma ArrayMultiObject | Value Semicolon ArrayMultiObject | Value $
+
+
+// map(完善)
+MapObject: LeftBrace MultiMapAssignStatements RightBrace $
+
+MapAssignObject : Assign Value | Colon Value $
+
+MultiMapAssignStatements: Identifier MapAssignStatement1 | 
+						  String MapAssignStatement1 | 
+						  Number MapAssignStatement2 | 
+						  Boolean MapAssignStatement2 | 
+						  FunctionDefine MultiMapAssignStatements | 
+						  Async FunctionDefine | 
+						  Async FunctionDefineWithoutKeyWord | 
+						  Comma | 
+						  Semicolon |
+						  · $
+
+MapAssignStatement1: MapAssignObject MultiMapAssignStatements | 
+					 FunctionDefineParams CodeBlock MultiMapAssignStatements | 
+					 Comma MultiMapAssignStatements | 
+					 Semicolon MultiMapAssignStatements $
+
+MapAssignStatement2: MapAssignObject MultiMapAssignStatements | 
+					 Comma MultiMapAssignStatements | 
+					 Semicolon MultiMapAssignStatements $
+
+
+// 宏

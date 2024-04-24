@@ -1,4 +1,6 @@
-﻿namespace Compiler.Syntax
+﻿using System.Text;
+
+namespace Compiler.Syntax
 {
     public class SyntaxReader
     {
@@ -37,19 +39,36 @@
         public static Dictionary<string, SyntaxLine> ReadFromFile(string fileName)
         {
             Dictionary<string, SyntaxLine> result = new Dictionary<string, SyntaxLine>();
+            StringBuilder stringBuilder = new StringBuilder();
             using (StreamReader streamReader = new StreamReader(fileName))
             {
+                // 先剔除注释
                 while (true)
                 {
                     var lineContent = streamReader.ReadLine();
                     if (lineContent == null)
                         break;
 
-                    var syntaxLine = Read(lineContent);
-                    if (syntaxLine == null)
-                        continue;
-                    result.Add(syntaxLine.Name, syntaxLine);
+                    int index = lineContent.IndexOf("//");
+                    if (index != -1)
+                    {
+                        string withoutComment = lineContent.Substring(0, index);
+                        if (!string.IsNullOrEmpty(withoutComment))
+                            stringBuilder.Append(withoutComment);
+                    }
+                    else
+                        stringBuilder.Append(lineContent);
                 }
+            }
+
+            string fileContent = stringBuilder.ToString();
+            var syntaxLines = fileContent.Split("$");
+            foreach (var lineContent in syntaxLines)
+            {
+                var syntaxLine = Read(lineContent);
+                if (syntaxLine == null)
+                    continue;
+                result.Add(syntaxLine.Name, syntaxLine);
             }
             return result;
         }

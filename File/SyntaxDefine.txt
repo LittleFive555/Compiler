@@ -1,48 +1,55 @@
 // TODO 现在for的分析表中有多条定义，需要消除
 
 
+S: MultiImportStatement MultiStatement | MultiImportStatement | MultiStatement | · $
+
+Statement:    AssignStatement    |     CodeBlock     |     Function Statement2      |     IfStatement     |     ForStatement     |     ForeachStatement | WhileStatement | ClassStatement | ReturnStatement | BreakStatement | ContinueStatement | SwitchStatement | CaseStatement | DefaultStatement | TryStatement | ThrowStatement | AwaitStatement | AsyncStatement | FunctionCall $
+
+// 语句
+MultiStatement: Statement MultiStatement1 $
+MultiStatement1: MultiStatement | · $
 
 
 // 代码块
-CodeBlock : LeftBrace MultiStatement RightBrace | LeftBrace RightBrace
+CodeBlock : LeftBrace MultiStatement RightBrace | LeftBrace RightBrace $
 
-FunctionParams : LeftPar FunctionParamsRight
+FunctionParams : LeftPar FunctionParamsRight $
 
-IndexMember: LeftBracket Value RightBracket CallMember1
+IndexMember: LeftBracket Value RightBracket CallMember1 $
 
-CallMember: Period Identifier CallMember3 | QuestionMarkDot CallMember2
+CallMember: Period Identifier CallMember3 | QuestionMarkDot CallMember2 $
 
-CallMember1: CallMember | IndexMember | ·
+CallMember1: CallMember | IndexMember | · $
 
-CallMember2: Identifier CallMember3 | FunctionParams CallMember1
+CallMember2: Identifier CallMember3 | FunctionParams CallMember1 $
 
-CallMember3: FunctionParams CallMember1 | CallMember1
+CallMember3: FunctionParams CallMember1 | CallMember1 $
 
-CanAssignValue1: CallMember CanAssignValue1 | IndexMember CanAssignValue1 | ·
-
-
-FunctionOrMember: FunctionParams | CallMember | IndexMember
-
-ArrayObject: LeftBracket ArrayObject1
-MapObject: LeftBrace MultiMapAssignStatements RightBrace | LeftBrace RightBrace
-
-Object1: FunctionOrMember | ·
-Object: Number | Identifier Object1 | Boolean | String | MapObject | ArrayObject | Null | Minus Object | Not Object | FunctionParams Lambda CodeBlock | New Identifier FunctionParams
-Factor: Object | LeftPar Value RightPar
+CanAssignValue1: CallMember CanAssignValue1 | IndexMember CanAssignValue1 | · $
 
 
-Statement2:Identifier FunctionParams CodeBlock | FunctionParams CodeBlock
+FunctionOrMember: FunctionParams | CallMember | IndexMember $
+
+ArrayObject: LeftBracket ArrayObject1 $
+MapObject: LeftBrace MultiMapAssignStatements RightBrace | LeftBrace RightBrace $
+
+Object1: FunctionOrMember | · $
+Object: Number | Identifier Object1 | Boolean | String | MapObject | ArrayObject | Null | Minus Object | Not Object | FunctionParams Lambda CodeBlock | New Identifier FunctionParams $
+Factor: Object | LeftPar Value RightPar $
+
+
+Statement2:Identifier FunctionParams CodeBlock | FunctionParams CodeBlock $
 
 // 运算
-Operation6: Operation6 EmptyRet Factor | Factor
-Operation5: Operation5 Multiply Operation6 | Operation5 Divide Operation6 | Operation5 Modulo Operation6 | Operation6 
-Operation4: Operation4 Plus Operation5 | Operation4 Minus Operation5 | Operation5
-Operation3: Operation3 Equal Operation4 | Operation3 NotEqual Operation4 | Operation3 EqualReference Operation4 | Operation3 NotEqualReference Operation4 | Operation3 Greater Operation4 | Operation3 GreaterOrEqual Operation4 | Operation3 Less Operation4 | Operation3 LessOrEqual Operation4 | Operation4
-Operation2: Operation2 InclusiveOr Operation3 | Operation2 Combine Operation3 | Operation2 XOR Operation3 | Operation2 LShift Operation3 | Operation2 RShift Operation3 | Operation3
-Operation1: Operation1 And Operation2 | Operation1 Minus Operation2 | Operation2 
+Operation6: Operation6 EmptyRet Factor | Factor $
+Operation5: Operation5 Multiply Operation6 | Operation5 Divide Operation6 | Operation5 Modulo Operation6 | Operation6  $
+Operation4: Operation4 Plus Operation5 | Operation4 Minus Operation5 | Operation5 $
+Operation3: Operation3 Equal Operation4 | Operation3 NotEqual Operation4 | Operation3 EqualReference Operation4 | Operation3 NotEqualReference Operation4 | Operation3 Greater Operation4 | Operation3 GreaterOrEqual Operation4 | Operation3 Less Operation4 | Operation3 LessOrEqual Operation4 | Operation4 $
+Operation2: Operation2 InclusiveOr Operation3 | Operation2 Combine Operation3 | Operation2 XOR Operation3 | Operation2 LShift Operation3 | Operation2 RShift Operation3 | Operation3 $
+Operation1: Operation1 And Operation2 | Operation1 Minus Operation2 | Operation2  $
 // 三目运算符（目前是优先级最低，可能需要调整）
-Operation0: Operation0 QuestionMark Operation1 Colon Operation1 | Operation1
-Value: Operation0
+Operation0: Operation0 QuestionMark Operation1 Colon Operation1 | Operation1 $
+Value: Operation0 $
 
 
 
@@ -54,30 +61,29 @@ Value: Operation0
 
 
 // 声明和赋值
-AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign | ModuloAssign | CombineAssign | InclusiveOrAssign | XORAssign | ShrAssign | ShiAssign
+AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign | ModuloAssign | CombineAssign | InclusiveOrAssign | XORAssign | ShrAssign | ShiAssign $
 
-CanAssignValue: Identifier CanAssignValue1 | MultiAssign CanAssignValue1
+MultiAssign: LeftBrace Identifier MultiAssign1 $
 
-AssignStatement: Var CanAssignValue CanAssignValueList AssignValue | CanAssignValue AssignStatement1 | DoublePlus CanAssignValue | DoubleMinus CanAssignValue
+CanAssignValue: Identifier CanAssignValue1 | MultiAssign CanAssignValue1 $
 
-AssignStatement1:Comma CanAssignValue CanAssignValueList AssignValue | AssignSymbol Value | LeftPar FunctionParamsRight AssignStatement11 | DoublePlus | DoubleMinus | ·
+AssignStatement: Var CanAssignValue CanAssignValueList AssignValue | CanAssignValue AssignStatement1 | DoublePlus CanAssignValue | DoubleMinus CanAssignValue $
 
-AssignStatement11:CodeBlock | ·
+AssignStatement1:Comma CanAssignValue CanAssignValueList AssignValue | AssignSymbol Value | LeftPar FunctionParamsRight CodeBlock | LeftPar FunctionParamsRight | DoublePlus | DoubleMinus | · $
 
 
-MultiAssign: LeftBrace Identifier MultiAssign1
 
-MultiAssign1: RightBrace | Comma IdentifierList RightBrace
+MultiAssign1: RightBrace | Comma IdentifierList RightBrace $
 
-IdentifierList: Identifier IdentifierList1 | ·
+IdentifierList: Identifier IdentifierList1 | · $
 
-IdentifierList1: Comma IdentifierList | Identifier | ·
+IdentifierList1: Comma IdentifierList | Identifier | · $
 
-ValueList: Value | ValueList Comma Value
+ValueList: Value | ValueList Comma Value $
 
-AssignValue: AssignSymbol Value | ·
+AssignValue: AssignSymbol Value | · $
 
-CanAssignValueList: Comma CanAssignValue CanAssignValueList | ·
+CanAssignValueList: Comma CanAssignValue CanAssignValueList | · $
 
 
 
@@ -86,148 +92,136 @@ CanAssignValueList: Comma CanAssignValue CanAssignValueList | ·
 
 
 // 函数
-FunctionDefine : Function Identifier FunctionParams CodeBlock | Identifier FunctionParams CodeBlock | Function FunctionParams CodeBlock
+FunctionDefine : Function Identifier FunctionParams CodeBlock | Identifier FunctionParams CodeBlock | Function FunctionParams CodeBlock $
 
-FunctionParamsRight: ValueList RightPar | RightPar
+FunctionParamsRight: ValueList RightPar | RightPar $
 
-FunctionCall: Identifier FunctionCall2
+FunctionCall: Identifier FunctionCall2 $
 
-FunctionCall2: FunctionParams FunctionCall21 | FunctionCall1
+FunctionCall1: Period Identifier FunctionCall2 | QuestionMarkDot Identifier FunctionCall2 | LeftBracket Value RightBracket FunctionCall1 $
 
-FunctionCall1: Period Identifier FunctionCall11 | LeftBracket Value RightBracket FunctionCall1 
-
-FunctionCall11: FunctionParams FunctionCall111 | FunctionCall1
-
-FunctionCall111: FunctionCall1 | ·
-
-FunctionCall21: FunctionCall1 | ·
+FunctionCall2: FunctionParams FunctionCall1 | FunctionParams | FunctionCall1 $
 
 // 布尔值
-Boolean : True | False
+Boolean : True | False $
 
 
 
 // if语句
-IfStatement : If LeftPar Value RightPar CodeBlock NotIfPart
+IfStatement : If LeftPar Value RightPar CodeBlock NotIfPart $
 
-NotIfPart : ElseIf LeftPar Value RightPar CodeBlock NotIfPart | ElsePart
+NotIfPart : ElseIf LeftPar Value RightPar CodeBlock NotIfPart | ElsePart $
 
-ElsePart: Else CodeBlock | ·
+ElsePart: Else CodeBlock | · $
 
 
 
 // for语句 (存在间接左递归，会无法判断两种for，可能需要去除间接左递归，或者引入回溯)
-ForStatement: For LeftPar ForPart
+ForStatement: For LeftPar ForPart $
 
 // 此处限定for第一部分只能出现赋值语句，但实际上的Scorpio实现不止可以赋值，而可以任何语句
-ForPart: AssignStatement ForNormalPartTwo | ForNormalPartTwo | Var Identifier AssignValue Comma Value RightPar CodeBlock | Identifier AssignValue Comma Value RightPar CodeBlock
+ForPart: AssignStatement ForNormalPartTwo | ForNormalPartTwo | Var Identifier AssignValue Comma Value RightPar CodeBlock | Identifier AssignValue Comma Value RightPar CodeBlock $
 
 // for语句 for(;;)
-ForNormalPartTwo: Semicolon ForNormalPartTwo1
-ForNormalPartTwo1: Value ForNormalPartThree | ForNormalPartThree
 
-ForNormalPartThree: Semicolon ForNormalPartThree1
+ForNormalPartThree: Semicolon ForNormalPartThree1 $
+
+ForNormalPartTwo: Semicolon ForNormalPartTwo1 $
+ForNormalPartTwo1: Value ForNormalPartThree | ForNormalPartThree $
 
 
 
 // foreach语句
-ForeachStatement: Foreach LeftPar Var Identifier In Object RightPar CodeBlock
+ForeachStatement: Foreach LeftPar Var Identifier In Object RightPar CodeBlock $
 
 
 
 // while语句
-WhileStatement: While LeftPar Value RightPar CodeBlock
+WhileStatement: While LeftPar Value RightPar CodeBlock $
 
 
 
 // class定义
-ClassStatement: Class Identifier ClassInherit
+ClassStatement: Class Identifier ClassInherit $
 
-ClassInherit: Colon Identifier ClassContent | ClassContent
+ClassContent: LeftBrace ClassMultiFunctionDefine RightBrace | LeftBrace RightBrace $
 
-ClassContent: LeftBrace ClassMultiFunctionDefine RightBrace | LeftBrace RightBrace
+ClassInherit: Colon Identifier ClassContent | ClassContent $
 
-ClassMultiFunctionDefine: ClassMultiFunctionDefine ClassFunctionDefine | ClassFunctionDefine
+ClassFunctionDefine: AsyncStatement | Get Identifier FunctionParams CodeBlock | FunctionDefine $
 
-ClassFunctionDefine: AsyncStatement | Get Identifier FunctionParams CodeBlock | FunctionDefine
+ClassMultiFunctionDefine: ClassFunctionDefine ClassMultiFunctionDefine | ClassFunctionDefine $
 
 
 
 // return
-ReturnStatement: Return | Return Value
+ReturnStatement: Return | Return Value $
 
 
 
 // break
-BreakStatement: Break
+BreakStatement: Break $
 
 
 
 // continue
-ContinueStatement: Continue
+ContinueStatement: Continue $
 
 
 
 // switch
-SwitchStatement: Switch LeftPar Value RightPar CodeBlock
+SwitchStatement: Switch LeftPar Value RightPar CodeBlock $
 
-CaseStatement: Case Value Colon
+CaseStatement: Case Value Colon $
 
-DefaultStatement: Default Colon
+DefaultStatement: Default Colon $
 
 
 
 // 异常
-TryStatement: Try CodeBlock Catch LeftPar Identifier RightPar CodeBlock
+TryStatement: Try CodeBlock Catch LeftPar Identifier RightPar CodeBlock $
 
-ThrowStatement: Throw Value
+ThrowStatement: Throw Value $
 
 
 
 // 异步
-AwaitStatement: Await Value
-AsyncStatement: Async FunctionDefine
+AwaitStatement: Await Value $
+AsyncStatement: Async FunctionDefine $
 
 
 
 // import
-ImportStatement: Import String
+ImportStatement: Import String $
 
-MultiImportStatement: ImportStatement MultiImportStatement | ImportStatement
+MultiImportStatement: ImportStatement MultiImportStatement | ImportStatement $
 
 
 
 // 数组
 
-ArrayObject1: Object ArrayMultiObject1 RightBracket | RightBracket
+ArrayObject1: Object ArrayMultiObject1 RightBracket | RightBracket $
 
-ArrayMultiObject: Object ArrayMultiObject1
+ArrayMultiObject: Object ArrayMultiObject1 $
 
-ArrayMultiObject1: Comma ArrayMultiObject | Semicolon ArrayMultiObject | Comma | Semicolon | ·
+ArrayMultiObject1: Comma ArrayMultiObject | Semicolon ArrayMultiObject | Comma | Semicolon | · $
 
 
 
 // map
-MapAssignObject : Assign Object | Colon Object
+MapAssignObject : Assign Object | Colon Object $
 
-MultiMapAssignStatements: Identifier MapAssignStatement1 | String MapAssignStatement2 | Number MapAssignStatement2 | Boolean MapAssignStatement2 | Function MapAssignStatement3  | ·
+MultiMapAssignStatements: Identifier MapAssignStatement1 | String MapAssignStatement2 | Number MapAssignStatement2 | Boolean MapAssignStatement2 | Function MapAssignStatement3  | · $
 
-MultiMapAssignStatements1: Comma MultiMapAssignStatements | Semicolon MultiMapAssignStatements | MultiMapAssignStatements
+MultiMapAssignStatements1: Comma MultiMapAssignStatements | Semicolon MultiMapAssignStatements | MultiMapAssignStatements $
 
-MapAssignStatement1: MapAssignObject MultiMapAssignStatements1 | FunctionParams CodeBlock MultiMapAssignStatements1 |  MultiMapAssignStatements1
+MapAssignStatement1: MapAssignObject MultiMapAssignStatements1 | FunctionParams CodeBlock MultiMapAssignStatements1 |  MultiMapAssignStatements1 $
 
-MapAssignStatement2: MapAssignObject MultiMapAssignStatements1| MultiMapAssignStatements1
+MapAssignStatement2: MapAssignObject MultiMapAssignStatements1| MultiMapAssignStatements1 $
 
-MapAssignStatement3: Identifier FunctionParams CodeBlock MultiMapAssignStatements1 | FunctionParams CodeBlock MultiMapAssignStatements1
+MapAssignStatement3: Identifier FunctionParams CodeBlock MultiMapAssignStatements1 | FunctionParams CodeBlock MultiMapAssignStatements1 $
 
 
 
-Statement:    AssignStatement    |     CodeBlock     |     Function Statement2      |     IfStatement     |     ForStatement     |     ForeachStatement | WhileStatement | ClassStatement | ReturnStatement | BreakStatement | ContinueStatement | SwitchStatement | CaseStatement | DefaultStatement | TryStatement | ThrowStatement | AwaitStatement | AsyncStatement | FunctionCall
 
-// 语句
-MultiStatement: Statement MultiStatement1
-MultiStatement1: MultiStatement | ·
-
-S: MultiImportStatement MultiStatement | MultiImportStatement | MultiStatement | ·
-
-ForNormalPartThree1: MultiStatement RightPar CodeBlock | RightPar CodeBlock
+ForNormalPartThree1: MultiStatement RightPar CodeBlock | RightPar CodeBlock $
