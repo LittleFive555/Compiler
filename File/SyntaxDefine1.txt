@@ -110,10 +110,8 @@ VarAssignStatement: Var IdentifierList AssignSymbol ValueList |
 
 IdentifierList: Identifier Comma IdentifierList | Identifier $
 
-CanAssignValue: Identifier CanAssignValue1
 				
 
-CanAssignValueList: CanAssignValue Comma CanAssignValueList | CanAssignValue $
 				
 CanAssignValue1: Period Identifier CanAssignValue1 |
 				 LeftBracket Object RightBracket CanAssignValue1 |
@@ -129,6 +127,10 @@ CanAssignValue1: Period Identifier CanAssignValue1 |
 				 QuestionMarkDot Period Identifier $
 
 AssignStatement: CanAssignValueList AssignSymbol ValueList $
+
+CanAssignValue: Identifier CanAssignValue1 $
+
+CanAssignValueList: CanAssignValue Comma CanAssignValueList | CanAssignValue $
 
 AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign | ModuloAssign | CombineAssign | InclusiveOrAssign | XORAssign | ShrAssign | ShiAssign $
 				 
@@ -152,7 +154,7 @@ ParamList: Identifier Comma ParamList |
 // 函数调用
 FunctionCallParams : LeftPar ValueList RightPar | LeftPar RightPar $
 
-ValueList: Value | ValueList Comma Value $
+ValueList: Value | Value Comma ValueList $
 
 FunctionCall: Identifier FunctionCallParams FunctionCall1 | Identifier FunctionCall1 | Identifier FunctionCallParams $
 

@@ -27,6 +27,27 @@ namespace Compiler.Syntax
             }
             return stringBuilder.ToString();
         }
+
+        public static bool IsSameProductions(SyntaxLine syntaxLine1, SyntaxLine syntaxLine2)
+        {
+            if (syntaxLine1.Productions.Count != syntaxLine2.Productions.Count)
+                return false;
+            foreach (var production1 in syntaxLine1.Productions)
+            {
+                bool haveSameProduction = false;
+                foreach (var production2 in syntaxLine2.Productions)
+                {
+                    if (Production.IsSameSymbolsList(production1, production2))
+                    {
+                        haveSameProduction = true;
+                        break;
+                    }
+                }
+                if (!haveSameProduction)
+                    return false;
+            }
+            return true;
+        }
     }
 
     public class Production : IEquatable<Production?>
@@ -52,7 +73,7 @@ namespace Compiler.Syntax
                    IsSameSymbolsList(this, other);
         }
 
-        private static bool IsSameSymbolsList(Production production1, Production production2)
+        public static bool IsSameSymbolsList(Production production1, Production production2)
         {
             if (production1.Symbols.Count != production2.Symbols.Count)
                 return false;

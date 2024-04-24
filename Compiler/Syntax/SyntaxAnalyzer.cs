@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
 using Compiler.Lexical;
 
 namespace Compiler.Syntax
@@ -151,22 +150,6 @@ namespace Compiler.Syntax
             return false;
         }
 
-        class Snapshot
-        {
-            public int StackHeight;
-            public Stack<string> CloneStack;
-            public int TokenIndex;
-            public int ChosenProductionIndex;
-
-            public Snapshot(Stack<string> stack, int tokenIndex, int chosenProductionIndex)
-            {
-                StackHeight = stack.Count;
-                CloneStack = new Stack<string>(stack.Reverse());
-                TokenIndex = tokenIndex;
-                ChosenProductionIndex = chosenProductionIndex;
-            }
-        }
-
         private void Initialize()
         {
             EliminateEmptyProduction();
@@ -215,13 +198,15 @@ namespace Compiler.Syntax
             return production.Symbols.Count == 1 && production.Symbols[0].Equals(Helpers.EmptyOperator.ToString());
         }
 
+        #region 消除左递归部分
+
         /// <summary>
         /// 消除左递归
         /// </summary>
         private void EliminateLeftRecursion()
         {
             Dictionary<string, SyntaxLine> newSyntaxLines = new Dictionary<string, SyntaxLine>();
-            var syntaxLinesList = SortSyntaxLine(m_syntaxLines.Values.ToList());
+            var syntaxLinesList = SortSyntaxLine(m_syntaxLines);
             for (int i = 0; i < syntaxLinesList.Count; i++)
             {
                 Dictionary<Production, List<Production>> productionsToReplace = new Dictionary<Production, List<Production>>();
@@ -323,35 +308,58 @@ namespace Compiler.Syntax
                 AddNewSyntaxLine(newSyntaxLine);
         }
 
-        private static List<SyntaxLine> SortSyntaxLine(List<SyntaxLine> syntaxLinesList)
+        private static List<SyntaxLine> SortSyntaxLine(Dictionary<string, SyntaxLine> syntaxLinesDic)
         {
-            List<SyntaxLine> sortedList = new List<SyntaxLine>();
-            while (syntaxLinesList.Count > 0)
+            Dictionary<string, List<string>> beUsedDic = new Dictionary<string, List<string>>();
+            Dictionary<string, int> beUsedWeight = new Dictionary<string, int>();
+            foreach (var syntaxLine in syntaxLinesDic)
+                beUsedDic.Add(syntaxLine.Key, new List<string>());
+            foreach (var syntaxLine in syntaxLinesDic)
             {
-                var currentLine = syntaxLinesList[0];
-                syntaxLinesList.RemoveAt(0);
-                if (sortedList.Count == 0)
-                    sortedList.Add(currentLine);
-                else
+                foreach (var production in syntaxLine.Value.Productions)
                 {
-                    int indexToInsert = 0;
-                    for (int i = 0; i < sortedList.Count; i++)
+                    if (syntaxLinesDic.ContainsKey(production.Symbols[0])) // 非终结符
                     {
-                        foreach (var production in currentLine.Productions)
-                        {
-                            if (production.Symbols[0].Equals(sortedList[i].Name))
-                            {
-                                indexToInsert = i + 1;
-                                break;
-                            }
-                        }
+                        if (production.Symbols[0] == syntaxLine.Key)
+                            continue;
+
+                        if (!beUsedDic[production.Symbols[0]].Contains(syntaxLine.Key))
+                            beUsedDic[production.Symbols[0]].Add(syntaxLine.Key);
                     }
-                    sortedList.Insert(indexToInsert, currentLine);
                 }
             }
 
+            foreach (var beused in beUsedDic)
+                IterationCalculateWeight(0, beUsedDic, beUsedWeight, beused.Key);
+
+            List<SyntaxLine> sortedList = syntaxLinesDic.Values.ToList();
+            sortedList.Sort((syntaxLine1, syntaxLine2) => beUsedWeight[syntaxLine2.Name] - beUsedWeight[syntaxLine1.Name]);
             return sortedList;
         }
+
+        private static int IterationCalculateWeight(int weight, Dictionary<string, List<string>> beUsedDic, Dictionary<string, int> beUsedWeight, string currentSyntaxName)
+        {
+            weight += 1;
+            if (beUsedWeight.ContainsKey(currentSyntaxName))
+                return beUsedWeight[currentSyntaxName];
+            else
+            {
+                if (beUsedDic[currentSyntaxName].Count > 0)
+                {
+                    foreach (var syntaxName in beUsedDic[currentSyntaxName])
+                        weight += IterationCalculateWeight(weight, beUsedDic, beUsedWeight, syntaxName);
+                    beUsedWeight.Add(currentSyntaxName, weight);
+                }
+                else
+                {
+                    beUsedWeight.Add(currentSyntaxName, weight);
+                    return weight;
+                }
+            }
+
+            return weight;
+        }
+        #endregion
 
         #region 提取左公因子部分
         /// <summary>
@@ -370,6 +378,8 @@ namespace Compiler.Syntax
                     GetLeftCommonFactorRecursively(syntaxLine, i, ref indexesHaveLeftCommonFactor, ref leftCommonFactor);
                     if (indexesHaveLeftCommonFactor.Count > 1)
                     {
+                        i--;
+
                         SyntaxLine newSyntaxLine = new SyntaxLine();
                         newSyntaxLine.Name = string.Format("{0}'", syntaxLine.Name);
                         while (m_syntaxLines.ContainsKey(newSyntaxLine.Name) || newSyntaxLines.ContainsKey(newSyntaxLine.Name))
@@ -393,22 +403,55 @@ namespace Compiler.Syntax
                                 newProductionsForNew.Add(newProduction);
                             }
                         }
+                        newSyntaxLine.Productions.AddRange(newProductionsForNew);
 
                         // 对旧的文法移除包含左公因子的表达式，并添加新替换的表达式
-                        foreach (var toRemove in toRemoveProductions)
-                            syntaxLine.Productions.Remove(toRemove);
+                        SyntaxLine withSameProductions = GetSyntaxLineWithSameProductions(newSyntaxLines, newSyntaxLine);
                         Production newProductionForOld = new Production(syntaxLine.Name);
                         newProductionForOld.Symbols.AddRange(leftCommonFactor);
-                        newProductionForOld.Symbols.Add(newSyntaxLine.Name);
+                        if (withSameProductions == null)
+                        {
+                            newProductionForOld.Symbols.Add(newSyntaxLine.Name);
+                            newSyntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
+                        }
+                        else
+                        {
+                            newProductionForOld.Symbols.Add(withSameProductions.Name);
+                        }
+                        foreach (var toRemove in toRemoveProductions)
+                            syntaxLine.Productions.Remove(toRemove);
                         syntaxLine.Productions.Add(newProductionForOld);
-
-                        newSyntaxLine.Productions.AddRange(newProductionsForNew);
-                        newSyntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
                     }
                 }
             }
             foreach (var newSyntaxLine in newSyntaxLines.Values)
                 AddNewSyntaxLine(newSyntaxLine);
+        }
+
+        private SyntaxLine GetSyntaxLineWithSameProductions(Dictionary<string, SyntaxLine> newSyntaxLines, SyntaxLine newSyntaxLine)
+        {
+            SyntaxLine withSameProductions = null;
+            foreach (var syntaxLine1111 in m_syntaxLines.Values)
+            {
+                if (SyntaxLine.IsSameProductions(syntaxLine1111, newSyntaxLine))
+                {
+                    withSameProductions = syntaxLine1111;
+                    break;
+                }
+            }
+            if (withSameProductions == null)
+            {
+                foreach (var syntaxLine1111 in newSyntaxLines.Values)
+                {
+                    if (SyntaxLine.IsSameProductions(syntaxLine1111, newSyntaxLine))
+                    {
+                        withSameProductions = syntaxLine1111;
+                        break;
+                    }
+                }
+            }
+
+            return withSameProductions;
         }
 
         private void GetLeftCommonFactorRecursively(SyntaxLine syntaxLine, int i, ref List<int> indexesHaveLeftCommonFactor, ref List<string> leftCommonFactor)
@@ -761,6 +804,22 @@ namespace Compiler.Syntax
             public void AppendError(CompileError error)
             {
                 Errors.Add(error);
+            }
+        }
+
+        private class Snapshot
+        {
+            public int StackHeight;
+            public Stack<string> CloneStack;
+            public int TokenIndex;
+            public int ChosenProductionIndex;
+
+            public Snapshot(Stack<string> stack, int tokenIndex, int chosenProductionIndex)
+            {
+                StackHeight = stack.Count;
+                CloneStack = new Stack<string>(stack.Reverse());
+                TokenIndex = tokenIndex;
+                ChosenProductionIndex = chosenProductionIndex;
             }
         }
     }
