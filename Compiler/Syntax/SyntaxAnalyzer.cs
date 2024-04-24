@@ -34,30 +34,7 @@ namespace Compiler.Syntax
             int counter = 0;
             while (currentSymbol != EndSymbol)
             {
-                #region 输出
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.Append(counter++);
-                stringBuilder.Append(" : ");
-                int line = 0;
-                for (int i = 0; i < index && i < tokens.Count; i++)
-                {
-                    if (line != tokens[i].Line)
-                    {
-                        stringBuilder.AppendLine();
-                        line = tokens[i].Line;
-                    }
-                    stringBuilder.Append(tokens[i].Content);
-                    stringBuilder.Append(" ");
-                }
-                stringBuilder.Append("\t\t\t");
-                var stackList = stack.ToArray();
-                for (int i = 0; i < stackList.Length; i++)
-                {
-                    stringBuilder.Append(stackList[i]);
-                    stringBuilder.Append(" ");
-                }
-                MyLogger.WriteLine(stringBuilder.ToString());
-                #endregion
+                counter = PrintAnalyzeProgress(tokens, stack, index, counter);
 
                 if (tokens[Math.Clamp(index, 0, tokens.Count - 1)].LexicalUnit.LexicalType == LexicalType.Comment)
                 {
@@ -193,14 +170,14 @@ namespace Compiler.Syntax
         private void Initialize()
         {
             EliminateEmptyProduction();
-            EliminateCircle();
-            EliminateLeftRecursion();
-            ExtractLeftCommonFactor();
 
-            foreach (var syntaxLine in m_syntaxLines.Values)
-            {
-                MyLogger.WriteLine(syntaxLine.ToString());
-            }
+            EliminateCircle();
+
+            EliminateLeftRecursion();
+            PrintSyntaxLines("After EliminateLeftRecursion");
+
+            ExtractLeftCommonFactor();
+            PrintSyntaxLines("After ExtractLeftCommonFactor");
 
             var firstSet = FirstSet();
             PrintFirstOrFollowSet("First", firstSet);
@@ -215,25 +192,6 @@ namespace Compiler.Syntax
 
             m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
             //PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
-        }
-
-        private static void PrintFirstOrFollowSet(string setName,Dictionary<string, HashSet<string>> followSet)
-        {
-            MyLogger.WriteLine("");
-            MyLogger.WriteLine("");
-            MyLogger.WriteLine(setName);
-            foreach (var set in followSet)
-            {
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.Append(set.Key);
-                stringBuilder.Append(": ");
-                foreach (var symbol in set.Value)
-                {
-                    stringBuilder.Append(symbol.ToString());
-                    stringBuilder.Append(" ");
-                }
-                MyLogger.WriteLine(stringBuilder.ToString());
-            }
         }
 
         /// <summary>
@@ -716,6 +674,34 @@ namespace Compiler.Syntax
             });
         }
 
+        private void PrintSyntaxLines(string title)
+        {
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine(title);
+            foreach (var syntaxLine in m_syntaxLines.Values)
+                MyLogger.WriteLine(syntaxLine.ToString());
+        }
+
+        private static void PrintFirstOrFollowSet(string title, Dictionary<string, HashSet<string>> followSet)
+        {
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine(title);
+            foreach (var set in followSet)
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(set.Key);
+                stringBuilder.Append(": ");
+                foreach (var symbol in set.Value)
+                {
+                    stringBuilder.Append(symbol.ToString());
+                    stringBuilder.Append(" ");
+                }
+                MyLogger.WriteLine(stringBuilder.ToString());
+            }
+        }
+
         private void PrintPredictiveAnalysisTable(Dictionary<string, Dictionary<string, List<Production>>> table)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -739,6 +725,33 @@ namespace Compiler.Syntax
                 stringBuilder.AppendLine();
             }
             MyLogger.WriteLine(stringBuilder.ToString());
+        }
+
+        private static int PrintAnalyzeProgress(List<Token> tokens, Stack<string> stack, int index, int counter)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append(counter++);
+            stringBuilder.Append(" : ");
+            int line = 0;
+            for (int i = 0; i < index && i < tokens.Count; i++)
+            {
+                if (line != tokens[i].Line)
+                {
+                    stringBuilder.AppendLine();
+                    line = tokens[i].Line;
+                }
+                stringBuilder.Append(tokens[i].Content);
+                stringBuilder.Append(" ");
+            }
+            stringBuilder.Append("\t\t\t");
+            var stackList = stack.ToArray();
+            for (int i = 0; i < stackList.Length; i++)
+            {
+                stringBuilder.Append(stackList[i]);
+                stringBuilder.Append(" ");
+            }
+            MyLogger.WriteLine(stringBuilder.ToString());
+            return counter;
         }
 
         internal class Result

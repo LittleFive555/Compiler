@@ -35,10 +35,7 @@ namespace Compiler
         {
             AnalyzeResult analyzeResult = new AnalyzeResult();
             var lexicalResult = m_lexicalAnalyzer.Read(stream);
-
-            MyLogger.WriteLine("Tokens:");
-            foreach (var token in lexicalResult.Tokens)
-                MyLogger.WriteLine(token);
+            PrintTokens(lexicalResult);
 
             analyzeResult.CompileErrors.AddRange(lexicalResult.Errors);
 
@@ -49,6 +46,15 @@ namespace Compiler
             analyzeResult.CompileErrors.AddRange(syntaxResult.Errors);
 
             return analyzeResult;
+        }
+
+        private static void PrintTokens(LexicalAnalyzer.Result lexicalResult)
+        {
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine("Tokens:");
+            foreach (var token in lexicalResult.Tokens)
+                MyLogger.WriteLine(token);
         }
     }
 
