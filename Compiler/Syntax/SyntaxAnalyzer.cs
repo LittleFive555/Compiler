@@ -262,9 +262,8 @@ namespace Compiler.Syntax
         /// </summary>
         private void EliminateLeftRecursion()
         {
-            // TODO 是否需要对syntaxLinesList排序？理论上是后面的文法表达式中会使用到前面的文法，前面的文法表达式中不使用后面的文法
             Dictionary<string, SyntaxLine> newSyntaxLines = new Dictionary<string, SyntaxLine>();
-            var syntaxLinesList = m_syntaxLines.Values.ToList();
+            var syntaxLinesList = SortSyntaxLine(m_syntaxLines.Values.ToList());
             for (int i = 0; i < syntaxLinesList.Count; i++)
             {
                 Dictionary<Production, List<Production>> productionsToReplace = new Dictionary<Production, List<Production>>();
@@ -364,6 +363,36 @@ namespace Compiler.Syntax
             // 将新产生的文法加入到文法列表中
             foreach (var newSyntaxLine in newSyntaxLines.Values)
                 AddNewSyntaxLine(newSyntaxLine);
+        }
+
+        private static List<SyntaxLine> SortSyntaxLine(List<SyntaxLine> syntaxLinesList)
+        {
+            List<SyntaxLine> sortedList = new List<SyntaxLine>();
+            while (syntaxLinesList.Count > 0)
+            {
+                var currentLine = syntaxLinesList[0];
+                syntaxLinesList.RemoveAt(0);
+                if (sortedList.Count == 0)
+                    sortedList.Add(currentLine);
+                else
+                {
+                    int indexToInsert = 0;
+                    for (int i = 0; i < sortedList.Count; i++)
+                    {
+                        foreach (var production in currentLine.Productions)
+                        {
+                            if (production.Symbols[0].Equals(sortedList[i].Name))
+                            {
+                                indexToInsert = i + 1;
+                                break;
+                            }
+                        }
+                    }
+                    sortedList.Insert(indexToInsert, currentLine);
+                }
+            }
+
+            return sortedList;
         }
 
         #region 提取左公因子部分
