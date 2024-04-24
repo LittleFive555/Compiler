@@ -159,7 +159,7 @@ namespace Compiler.Syntax
             EliminateLeftRecursion();
             PrintSyntaxLines("After EliminateLeftRecursion");
 
-            ExtractLeftCommonFactor();
+            ExtractLeftCommonFactor(m_syntaxLines.Values);
             PrintSyntaxLines("After ExtractLeftCommonFactor");
 
             var firstSet = FirstSet();
@@ -233,7 +233,27 @@ namespace Compiler.Syntax
 
                                 for (int k = 1; k < production.Symbols.Count; k++)
                                     newProduction.Symbols.Add(production.Symbols[k]);
-                                productionsToReplace[production].Add(newProduction);
+
+                                // 如果产生了完全相同的产生式，则跳过
+                                bool haveSame = false;
+                                foreach (var temp in productionsToReplace[production])
+                                {
+                                    if (Production.IsSameSymbolsList(temp, newProduction))
+                                    {
+                                        haveSame = true;
+                                        break;
+                                    }
+                                }
+                                foreach (var temp in syntaxLinesList[i].Productions)
+                                {
+                                    if (Production.IsSameSymbolsList(temp, newProduction))
+                                    {
+                                        haveSame = true;
+                                        break;
+                                    }
+                                }
+                                if (!haveSame)
+                                    productionsToReplace[production].Add(newProduction);
                             }
                         }
                     }
@@ -260,9 +280,7 @@ namespace Compiler.Syntax
                 }
                 // 消除新产生式的直接左递归
                 SyntaxLine newSyntaxLine = new SyntaxLine();
-                newSyntaxLine.Name = string.Format("{0}'", syntaxLinesList[i].Name);
-                while (m_syntaxLines.ContainsKey(newSyntaxLine.Name) || newSyntaxLines.ContainsKey(newSyntaxLine.Name))
-                    newSyntaxLine.Name = string.Format("{0}'", newSyntaxLine.Name);
+                newSyntaxLine.Name = GetNewName(newSyntaxLines, syntaxLinesList[i].Name);
                 List<Production> notLeftRecursionProductions = new List<Production>();
                 bool haveLeftRecursion = false;
                 foreach (var production in syntaxLinesList[i].Productions)
@@ -365,10 +383,10 @@ namespace Compiler.Syntax
         /// <summary>
         /// 提取左公因子
         /// </summary>
-        private void ExtractLeftCommonFactor()
+        private void ExtractLeftCommonFactor(IEnumerable<SyntaxLine> syntaxLinesList)
         {
             Dictionary<string, SyntaxLine> newSyntaxLines = new Dictionary<string, SyntaxLine>();
-            foreach (var syntaxLine in m_syntaxLines.Values)
+            foreach (var syntaxLine in syntaxLinesList)
             {
                 for (int i = 0; i < syntaxLine.Productions.Count; i++)
                 {
@@ -381,10 +399,7 @@ namespace Compiler.Syntax
                         i--;
 
                         SyntaxLine newSyntaxLine = new SyntaxLine();
-                        newSyntaxLine.Name = string.Format("{0}'", syntaxLine.Name);
-                        while (m_syntaxLines.ContainsKey(newSyntaxLine.Name) || newSyntaxLines.ContainsKey(newSyntaxLine.Name))
-                            newSyntaxLine.Name = string.Format("{0}'", newSyntaxLine.Name);
-
+                        newSyntaxLine.Name = GetNewName(newSyntaxLines, syntaxLine.Name);
                         // 获取需要移除的具有左公因子的表达式，并生成新文法的所有表达式
                         List<Production> toRemoveProductions = new List<Production>();
                         List<Production> newProductionsForNew = new List<Production>();
@@ -426,6 +441,9 @@ namespace Compiler.Syntax
             }
             foreach (var newSyntaxLine in newSyntaxLines.Values)
                 AddNewSyntaxLine(newSyntaxLine);
+
+            if (newSyntaxLines.Count > 0)
+                ExtractLeftCommonFactor(newSyntaxLines.Values);
         }
 
         private SyntaxLine GetSyntaxLineWithSameProductions(Dictionary<string, SyntaxLine> newSyntaxLines, SyntaxLine newSyntaxLine)
@@ -501,6 +519,18 @@ namespace Compiler.Syntax
         private void AddNewSyntaxLine(SyntaxLine newSyntaxLine)
         {
             m_syntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
+        }
+
+        private string GetNewName(Dictionary<string, SyntaxLine> newSyntaxLines, string name)
+        {
+            int count = 0;
+            string newName = name;
+            while (m_syntaxLines.ContainsKey(newName) || newSyntaxLines.ContainsKey(newName))
+            {
+                newName = string.Format("{0}_{1}", name, count);
+                count++;
+            }
+            return newName;
         }
 
         #region 求first集部分
