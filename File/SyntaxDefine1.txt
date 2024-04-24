@@ -35,7 +35,8 @@ CodeBlock: LeftBrace MultiStatement RightBrace |
 		   
 
 Object: Identifier | 
-		Identifier CanAssignValue | 
+		Identifier CanAssignValue1 | 
+		FunctionCall |
 		FunctionDefine |
 		ClassStatement |
 		LeftPar Value RightPar |
@@ -115,20 +116,20 @@ IdentifierList: Identifier Comma IdentifierList | Identifier $
 				
 CanAssignValue1: Period Identifier CanAssignValue1 |
 				 LeftBracket Object RightBracket CanAssignValue1 |
-				 FunctionCall CanAssignValue1 |
+				 Period FunctionCall CanAssignValue1 |
 				 QuestionMarkDot LeftBracket Object RightBracket CanAssignValue1 |
 				 QuestionMarkDot FunctionCall CanAssignValue1 |
 				 QuestionMarkDot Period Identifier CanAssignValue1 |
 				 Period Identifier |
 				 LeftBracket Object RightBracket |
-				 FunctionCall |
+				 Period FunctionCall |
 				 QuestionMarkDot LeftBracket Object RightBracket |
 				 QuestionMarkDot FunctionCall |
 				 QuestionMarkDot Period Identifier $
 
 AssignStatement: CanAssignValueList AssignSymbol ValueList $
 
-CanAssignValue: Identifier CanAssignValue1 $
+CanAssignValue: Identifier CanAssignValue1 | Identifier $
 
 CanAssignValueList: CanAssignValue Comma CanAssignValueList | CanAssignValue $
 
@@ -269,11 +270,11 @@ MultiImportStatement: ImportStatement MultiImportStatement | ImportStatement $
 // 数组(完善)
 ArrayObject: LeftBracket ArrayMultiObject RightBracket | LeftBracket RightBracket $
 
-ArrayMultiObject: Value Comma ArrayMultiObject | Value Semicolon ArrayMultiObject | Value $
+ArrayMultiObject: Value Comma ArrayMultiObject | Value Semicolon ArrayMultiObject | Value Comma | Value Semicolon | Value $
 
 
 // map(完善)
-MapObject: LeftBrace MultiMapAssignStatements RightBrace $
+MapObject: LeftBrace MultiMapAssignStatements RightBrace | LeftBrace RightBrace $
 
 MapAssignObject : Assign Value | Colon Value $
 
@@ -284,8 +285,8 @@ MultiMapAssignStatements: Identifier MapAssignStatement1 |
 						  FunctionDefine MultiMapAssignStatements | 
 						  Async FunctionDefine | 
 						  Async FunctionDefineWithoutKeyWord | 
-						  Comma | 
-						  Semicolon |
+						  Comma MultiMapAssignStatements | 
+						  Semicolon MultiMapAssignStatements |
 						  · $
 
 MapAssignStatement1: MapAssignObject MultiMapAssignStatements | 

@@ -46,8 +46,8 @@ namespace Compiler.Syntax
                 if (currentSymbol.Equals(currentTokenName))
                 {
                     stack.Pop();
-                    if (snapshotStack.Count > 0 && stack.Count < snapshotStack.Peek().CloneStack.Count)
-                        snapshotStack.Pop();
+                    //if (snapshotStack.Count > 0 && stack.Count < snapshotStack.Peek().CloneStack.Count)
+                    //    snapshotStack.Pop();
                     index++;
                 }
                 else if (IsTerminalSymbol(currentSymbol))
@@ -81,30 +81,30 @@ namespace Compiler.Syntax
                 else
                 {
                     var syntaxProductions = m_predictiveAnylisisTable[currentSymbol][currentTokenName];
-                    if (syntaxProductions.Count > 2)
-                        throw new Exception();
+                    //if (syntaxProductions.Count > 2)
+                    //    throw new Exception();
 
                     Production production;
                     if (syntaxProductions.Count == 1) // 只有一个产生式，选择该产生式
                         production = syntaxProductions[0];
                     else
                     {
-                        if (IsEmptyProduction(syntaxProductions[1])) // 第一个产生式非空，第二个产生式为空，选择非空
-                            production = syntaxProductions[0];
-                        else // 两个产生式全非空，则准备回溯（或许可能会当有空产生式时也回溯？）
-                        {
+                        //if (IsEmptyProduction(syntaxProductions[1])) // 第一个产生式非空，第二个产生式为空，选择非空
+                        //    production = syntaxProductions[0];
+                        //else // 两个产生式全非空，则准备回溯（或许可能会当有空产生式时也回溯？）
+                        //{
                             int productionIndex = 0;
                             var snapshot = new Snapshot(stack, index, productionIndex);
                             snapshotStack.Push(snapshot);
                             production = syntaxProductions[productionIndex];
-                        }
+                        //}
                     }
 
                     if (IsEmptyProduction(production))
                     {
                         stack.Pop();
-                        if (snapshotStack.Count > 0 && stack.Count < snapshotStack.Peek().CloneStack.Count)
-                            snapshotStack.Pop();
+                        //if (snapshotStack.Count > 0 && stack.Count < snapshotStack.Peek().CloneStack.Count)
+                        //    snapshotStack.Pop();
                     }
                     else
                     {
@@ -129,16 +129,23 @@ namespace Compiler.Syntax
                 var syntaxProductions = m_predictiveAnylisisTable[currentSymbol][currentTokenName];
                 if (snapshot.ChosenProductionIndex + 1 < syntaxProductions.Count)
                 {
-                    stack = new Stack<string>(snapshot.CloneStack.Reverse());
-                    index = snapshot.TokenIndex;
 
                     var production = syntaxProductions[++snapshot.ChosenProductionIndex];
+                    if (IsEmptyProduction(production))
+                    {
+                        snapshotStack.Pop();
+                    }
+                    else
+                    {
+                        stack = new Stack<string>(snapshot.CloneStack.Reverse());
+                        index = snapshot.TokenIndex;
 
-                    stack.Pop();
-                    for (int i = production.Symbols.Count - 1; i >= 0; i--)
-                        stack.Push(production.Symbols[i]);
+                        stack.Pop();
+                        for (int i = production.Symbols.Count - 1; i >= 0; i--)
+                            stack.Push(production.Symbols[i]);
 
-                    return true;
+                        return true;
+                    }
                 }
                 else
                 {
@@ -174,7 +181,7 @@ namespace Compiler.Syntax
             }
 
             m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
-            //PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
+            PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
         }
 
         /// <summary>
@@ -209,75 +216,7 @@ namespace Compiler.Syntax
             var syntaxLinesList = SortSyntaxLine(m_syntaxLines);
             for (int i = 0; i < syntaxLinesList.Count; i++)
             {
-                Dictionary<Production, List<Production>> productionsToReplace = new Dictionary<Production, List<Production>>();
-                for (int j = 0; j < i; j++)
-                {
-                    // 将每个形如Ai->AjY的产生式替换为产生式组Ai->X1Y|X2Y|...|XkY，
-                    // 其中Aj->X1|X2|...|Xk是所有的Aj产生式
-                    foreach (var production in syntaxLinesList[i].Productions)
-                    {
-                        if (production.Symbols[0] == syntaxLinesList[j].Name)
-                        {
-                            productionsToReplace.Add(production, new List<Production>());
-                            foreach (var production2 in syntaxLinesList[j].Productions)
-                            {
-                                Production newProduction = new Production(syntaxLinesList[i].Name);
-                                if (IsEmptyProduction(production2) && production.Symbols.Count >= 2)
-                                {
-
-                                }
-                                else
-                                {
-                                    newProduction.Symbols.AddRange(production2.Symbols);
-                                }
-
-                                for (int k = 1; k < production.Symbols.Count; k++)
-                                    newProduction.Symbols.Add(production.Symbols[k]);
-
-                                // 如果产生了完全相同的产生式，则跳过
-                                bool haveSame = false;
-                                foreach (var temp in productionsToReplace[production])
-                                {
-                                    if (Production.IsSameSymbolsList(temp, newProduction))
-                                    {
-                                        haveSame = true;
-                                        break;
-                                    }
-                                }
-                                foreach (var temp in syntaxLinesList[i].Productions)
-                                {
-                                    if (Production.IsSameSymbolsList(temp, newProduction))
-                                    {
-                                        haveSame = true;
-                                        break;
-                                    }
-                                }
-                                if (!haveSame)
-                                    productionsToReplace[production].Add(newProduction);
-                            }
-                        }
-                    }
-                }
-                foreach (var toReplace in productionsToReplace)
-                {
-                    syntaxLinesList[i].Productions.Remove(toReplace.Key);
-                    syntaxLinesList[i].Productions.AddRange(toReplace.Value);
-                    // 移除多余的空表达式
-                    bool haveOneEmpty = false;
-                    for (int j = 0; j < syntaxLinesList[i].Productions.Count; j++)
-                    {
-                        if (IsEmptyProduction(syntaxLinesList[i].Productions[j]))
-                        {
-                            if (!haveOneEmpty)
-                                haveOneEmpty = true;
-                            else
-                            {
-                                syntaxLinesList[i].Productions.RemoveAt(j);
-                                j--;
-                            }
-                        }
-                    }
-                }
+                ReplaceFirstSymbol(syntaxLinesList, i);
                 // 消除新产生式的直接左递归
                 SyntaxLine newSyntaxLine = new SyntaxLine();
                 newSyntaxLine.Name = GetNewName(newSyntaxLines, syntaxLinesList[i].Name);
@@ -324,6 +263,79 @@ namespace Compiler.Syntax
             // 将新产生的文法加入到文法列表中
             foreach (var newSyntaxLine in newSyntaxLines.Values)
                 AddNewSyntaxLine(newSyntaxLine);
+        }
+
+        private void ReplaceFirstSymbol(List<SyntaxLine> syntaxLinesList, int i)
+        {
+            Dictionary<Production, List<Production>> productionsToReplace = new Dictionary<Production, List<Production>>();
+            for (int j = 0; j < i; j++)
+            {
+                // 将每个形如Ai->AjY的产生式替换为产生式组Ai->X1Y|X2Y|...|XkY，
+                // 其中Aj->X1|X2|...|Xk是所有的Aj产生式
+                foreach (var production in syntaxLinesList[i].Productions)
+                {
+                    if (production.Symbols[0] == syntaxLinesList[j].Name)
+                    {
+                        productionsToReplace.Add(production, new List<Production>());
+                        foreach (var production2 in syntaxLinesList[j].Productions)
+                        {
+                            Production newProduction = new Production(syntaxLinesList[i].Name);
+                            if (IsEmptyProduction(production2) && production.Symbols.Count >= 2)
+                            {
+
+                            }
+                            else
+                            {
+                                newProduction.Symbols.AddRange(production2.Symbols);
+                            }
+
+                            for (int k = 1; k < production.Symbols.Count; k++)
+                                newProduction.Symbols.Add(production.Symbols[k]);
+
+                            // 如果产生了完全相同的产生式，则跳过
+                            bool haveSame = false;
+                            foreach (var temp in productionsToReplace[production])
+                            {
+                                if (Production.IsSameSymbolsList(temp, newProduction))
+                                {
+                                    haveSame = true;
+                                    break;
+                                }
+                            }
+                            foreach (var temp in syntaxLinesList[i].Productions)
+                            {
+                                if (Production.IsSameSymbolsList(temp, newProduction))
+                                {
+                                    haveSame = true;
+                                    break;
+                                }
+                            }
+                            if (!haveSame)
+                                productionsToReplace[production].Add(newProduction);
+                        }
+                    }
+                }
+            }
+            foreach (var toReplace in productionsToReplace)
+            {
+                syntaxLinesList[i].Productions.Remove(toReplace.Key);
+                syntaxLinesList[i].Productions.AddRange(toReplace.Value);
+                // 移除多余的空表达式
+                bool haveOneEmpty = false;
+                for (int j = 0; j < syntaxLinesList[i].Productions.Count; j++)
+                {
+                    if (IsEmptyProduction(syntaxLinesList[i].Productions[j]))
+                    {
+                        if (!haveOneEmpty)
+                            haveOneEmpty = true;
+                        else
+                        {
+                            syntaxLinesList[i].Productions.RemoveAt(j);
+                            j--;
+                        }
+                    }
+                }
+            }
         }
 
         private static List<SyntaxLine> SortSyntaxLine(Dictionary<string, SyntaxLine> syntaxLinesDic)
@@ -778,6 +790,9 @@ namespace Compiler.Syntax
         private void PrintPredictiveAnalysisTable(Dictionary<string, Dictionary<string, List<Production>>> table)
         {
             StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine("");
+            stringBuilder.AppendLine("");
+            stringBuilder.AppendLine("PredictiveAnalysisTable");
             foreach (var pair1 in table)
             {
                 stringBuilder.AppendLine(pair1.Key);
@@ -803,6 +818,8 @@ namespace Compiler.Syntax
         private static int PrintAnalyzeProgress(List<Token> tokens, Stack<string> stack, int index, int counter)
         {
             StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine("");
+            stringBuilder.AppendLine("");
             stringBuilder.Append(counter++);
             stringBuilder.Append(" : ");
             int line = 0;
