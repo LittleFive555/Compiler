@@ -41,8 +41,7 @@ CodeBlock: LeftBrace MultiStatement RightBrace |
 		   
 		   
 
-Object: Identifier | 
-		Identifier CanAssignValue1 | 
+Object: CanAssignValue |
 		SelfCalculate |
 		FunctionCall |
 		FunctionDefine |
@@ -65,7 +64,9 @@ Object: Identifier |
 		
 		Minus Object | 
 		Not Object | 
-		Negative Object $
+		Negative Object |
+		
+		CanAssignValue AssignSymbol Value $
 
 
 
@@ -118,31 +119,23 @@ SelfCalculate: CanAssignValue DoublePlus |
 
 
 // 声明和赋值
-VarAssignStatement: Var IdentifierList AssignSymbol ValueList |
+VarAssignStatement: Var IdentifierList |
+					Var IdentifierList AssignSymbol ValueList |
 					Var LeftBrace IdentifierList RightBrace Assign Value $
 
 IdentifierList: Identifier Comma IdentifierList | Identifier $
 
-				
-
-				
-CanAssignValue1: Period Identifier CanAssignValue1 |
-				 QuestionMarkDot Identifier CanAssignValue1 |
-				 LeftBracket Value RightBracket CanAssignValue1 |
-				 Period FunctionCall CanAssignValue1 |
-				 QuestionMarkDot FunctionCall CanAssignValue1 |
-				 QuestionMarkDot LeftBracket Value RightBracket CanAssignValue1 |
-				 
-				 Period Identifier |
-				 QuestionMarkDot Identifier |
-				 LeftBracket Value RightBracket |
-				 Period FunctionCall |
-				 QuestionMarkDot FunctionCall |
-				 QuestionMarkDot LeftBracket Value RightBracket $
-
 AssignStatement: CanAssignValueList AssignSymbol ValueList | GlobalVar CanAssignValueList AssignSymbol ValueList $
 
-CanAssignValue: Identifier CanAssignValue1 | Identifier $
+CanAssignValue: Identifier | Identifier CanAssignValue1 $
+
+CanAssignValue1: IndexMember | 
+				 PeriodMember | 
+				 PeriodFunction CanAssignValue1 |
+				 IndexMember CanAssignValue1 | 
+				 PeriodMember CanAssignValue1 | 
+				 FunctionCallParams CanAssignValue1 |
+				 QuestionMarkDot FunctionCallParams CanAssignValue1 $
 
 CanAssignValueList: CanAssignValue Comma CanAssignValueList | CanAssignValue $
 
@@ -171,30 +164,28 @@ ParamList: Identifier Comma ParamList |
 // 函数调用
 FunctionCallParams : LeftPar ValueList RightPar | LeftPar RightPar $
 
-ValueList: Value | Value Comma | Value Comma ValueList $
+ValueList: Value | Value Comma | Value Params | Value Params Comma | Value Comma ValueList $
 
-FunctionCall: Identifier FunctionCallParams FunctionCall1 | 
-			  Identifier QuestionMarkDot FunctionCallParams FunctionCall1 | 
-			  Identifier FunctionCall1 | 
-			  Identifier FunctionCallParams | 
-			  Identifier QuestionMarkDot FunctionCallParams |
-			  FunctionDefineParams Lambda CodeBlock FunctionCall1 $
+FunctionCall: Identifier FunctionCall1 |
+			  String Period Identifier FunctionCallParams $
 
-FunctionCall1: Period Identifier FunctionCallParams FunctionCall1 | 
-			   Period Identifier FunctionCallParams | 
-			   Period Identifier QuestionMarkDot FunctionCallParams FunctionCall1 | 
-			   Period Identifier QuestionMarkDot FunctionCallParams | 
-			   Period Identifier FunctionCall1 | 
-			   Period Identifier | 
-			   QuestionMarkDot Identifier FunctionCallParams FunctionCall1 | 
-			   QuestionMarkDot Identifier FunctionCallParams | 
-			   QuestionMarkDot Identifier QuestionMarkDot FunctionCallParams FunctionCall1 | 
-			   QuestionMarkDot Identifier QuestionMarkDot FunctionCallParams | 
-			   QuestionMarkDot Identifier FunctionCall1 | 
-			   QuestionMarkDot Identifier | 
-			   LeftBracket Value RightBracket FunctionCall1 |
-			   QuestionMarkDot LeftBracket Value RightBracket FunctionCall1 $
+FunctionCall1: FunctionCallParams | 
+			   FunctionCallParams FunctionCall1 |
+			   QuestionMarkDot FunctionCallParams |
+			   QuestionMarkDot FunctionCallParams FunctionCall1 |
+			   PeriodFunction |
+			   PeriodFunction FunctionCall1 |
+			   PeriodMember FunctionCall1 | 
+			   IndexMember FunctionCall1 $
 
+PeriodMember: Period Identifier | 
+			  QuestionMarkDot Identifier $
+			  
+PeriodFunction: Period Identifier FunctionCallParams | 
+				QuestionMarkDot Identifier FunctionCallParams $
+
+IndexMember: LeftBracket Value RightBracket $
+			 QuestionMarkDot LeftBracket Value RightBracket $
 
 
 // 布尔值(完善)
