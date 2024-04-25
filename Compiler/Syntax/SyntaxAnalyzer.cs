@@ -730,24 +730,30 @@ namespace Compiler.Syntax
                 table.Add(syntaxLine.Name, currentRow);
                 foreach (var production in syntaxLine.Productions)
                 {
-                    var firstSymbol = production.Symbols[0];
-                    HashSet<string> currentProductionFirst;
-                    if (firstSymbol.Equals(Helpers.EmptyOperator.ToString()))
-                        currentProductionFirst = new HashSet<string>() { Helpers.EmptyOperator.ToString() };
+                    HashSet<string> currentProductionFirst = new HashSet<string>();
+                    if (IsEmptyProduction(production))
+                        currentProductionFirst.Add(Helpers.EmptyOperator.ToString());
                     else
-                        currentProductionFirst = firstSet[firstSymbol];
-                    foreach (var first in currentProductionFirst)
                     {
-                        if (IsTerminalSymbol(first))
-                            AddToCell(currentRow, first, production);
+                        foreach (var symbol in production.Symbols)
+                        {
+                            currentProductionFirst.UnionWith(firstSet[symbol]);
+                            if (!firstSet[symbol].Contains(Helpers.EmptyOperator.ToString()))
+                                break;
+                        }
+                        foreach (var first in currentProductionFirst)
+                        {
+                            if (IsTerminalSymbol(first))
+                                AddToCell(currentRow, first, production);
+                        }
                     }
                     if (currentProductionFirst.Contains(Helpers.EmptyOperator.ToString()))
                     {
                         var currentSyntaxLineFollow = followSet[syntaxLine.Name];
-                        foreach (var symbol in currentSyntaxLineFollow)
+                        foreach (var symbolInFollow in currentSyntaxLineFollow)
                         {
-                            if (IsTerminalSymbol(symbol))
-                                AddToCell(currentRow, symbol, production);
+                            if (IsTerminalSymbol(symbolInFollow))
+                                AddToCell(currentRow, symbolInFollow, production);
                         }
                         if (currentSyntaxLineFollow.Contains(EndSymbol))
                             AddToCell(currentRow, EndSymbol, production);
