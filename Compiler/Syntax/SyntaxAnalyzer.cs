@@ -77,7 +77,7 @@ namespace Compiler.Syntax
                     {
                         result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
                         // TODO try fix and continue
-                        index++;
+                        stack.Pop();
                     }
                 }
                 else if (!m_predictiveAnylisisTable[currentSymbol].ContainsKey(currentTokenName))
