@@ -334,10 +334,10 @@ MacroIfStatement : MacroIf MacroDefineList MultiStatementWithoutMacroIfStatement
 				   MacroIf MacroDefineList MacroElseIfPart MacroElse MultiStatementWithoutMacroIfStatement MacroEndif |
 				   MacroIf MacroDefineList MacroElseIfPart MacroElse MacroEndif $
 
-MacroElseIfPart : MacroElif Identifier MultiStatementWithoutMacroIfStatement MacroElseIfPart | 
-				  MacroElif Identifier MultiStatementWithoutMacroIfStatement |
-				  MacroElif Identifier MacroElseIfPart | 
-				  MacroElif Identifier $
+MacroElseIfPart : MacroElif MacroDefineList MultiStatementWithoutMacroIfStatement MacroElseIfPart | 
+				  MacroElif MacroDefineList MultiStatementWithoutMacroIfStatement |
+				  MacroElif MacroDefineList MacroElseIfPart | 
+				  MacroElif MacroDefineList $
 				  
 MacroDefineList : Identifier | 
 				  Not Identifier |
