@@ -1,30 +1,37 @@
-S: MultiImportStatement MultiStatement | MultiImportStatement | MultiStatement | · $
+S: MultiStatement | · $
 
 // 语句
 MultiStatement: Statement MultiStatement | Statement $
 
-Statement: VarAssignStatement |
-		   AssignStatement |
-		   CodeBlock |
-		   FunctionDefine |
-		   FunctionDefineWithoutKeyWord |
-		   FunctionCall |
-		   IfStatement |     
-		   ForStatement |     
-		   ForeachStatement | 
-		   WhileStatement | 
-		   ClassStatement | 
-		   ReturnStatement | 
-		   BreakStatement | 
-		   ContinueStatement | 
-		   SwitchStatement | 
-		   CaseStatement | 
-		   DefaultStatement | 
-		   TryStatement | 
-		   ThrowStatement | 
-		   AwaitStatement | 
-		   AsyncStatement | 
-		   Semicolon $
+MultiStatementWithoutMacroIfStatement: StatementWithoutMacroIfStatement MultiStatementWithoutMacroIfStatement | StatementWithoutMacroIfStatement $
+
+Statement: StatementWithoutMacroIfStatement | 
+		   MacroIfStatement $
+		   
+StatementWithoutMacroIfStatement: ImportStatement |
+								  VarAssignStatement |
+								  AssignStatement |
+								  SelfCalculate |
+								  CodeBlock |
+								  FunctionDefine |
+								  FunctionDefineWithoutKeyWord |
+								  FunctionCall |
+								  IfStatement |     
+								  ForStatement |     
+								  ForeachStatement | 
+								  WhileStatement | 
+								  ClassStatement | 
+								  ReturnStatement | 
+								  BreakStatement | 
+								  ContinueStatement | 
+								  SwitchStatement | 
+								  CaseStatement | 
+								  DefaultStatement | 
+								  TryStatement | 
+								  ThrowStatement | 
+								  AwaitStatement | 
+								  AsyncStatement | 
+								  Semicolon $
 
 
 // 代码块(完善)
@@ -36,6 +43,7 @@ CodeBlock: LeftBrace MultiStatement RightBrace |
 
 Object: Identifier | 
 		Identifier CanAssignValue1 | 
+		SelfCalculate |
 		FunctionCall |
 		FunctionDefine |
 		ClassStatement |
@@ -69,7 +77,7 @@ Operation0: Operation0 QuestionMark Operation1 Colon Operation1 |
 			Operation1 $
 
 Operation1: Operation1 And Operation2 | 
-			Operation1 Minus Operation2 | 
+			Operation1 Or Operation2 | 
 			Operation2  $
 
 Operation2: Operation2 InclusiveOr Operation3 | 
@@ -103,11 +111,15 @@ Operation6: Operation6 EmptyRet Factor |
 		
 Factor: Object | LeftPar Value RightPar $
 
+SelfCalculate: CanAssignValue DoublePlus |
+			   CanAssignValue DoubleMinus |
+			   DoublePlus CanAssignValue |
+			   DoubleMinus CanAssignValue $
 
 
 // 声明和赋值
 VarAssignStatement: Var IdentifierList AssignSymbol ValueList |
-					Var LeftBrace IdentifierList RightBrace Assign Object $
+					Var LeftBrace IdentifierList RightBrace Assign Value $
 
 IdentifierList: Identifier Comma IdentifierList | Identifier $
 
@@ -115,17 +127,18 @@ IdentifierList: Identifier Comma IdentifierList | Identifier $
 
 				
 CanAssignValue1: Period Identifier CanAssignValue1 |
-				 LeftBracket Object RightBracket CanAssignValue1 |
+				 QuestionMarkDot Identifier CanAssignValue1 |
+				 LeftBracket Value RightBracket CanAssignValue1 |
 				 Period FunctionCall CanAssignValue1 |
-				 QuestionMarkDot LeftBracket Object RightBracket CanAssignValue1 |
 				 QuestionMarkDot FunctionCall CanAssignValue1 |
-				 QuestionMarkDot Period Identifier CanAssignValue1 |
+				 QuestionMarkDot LeftBracket Value RightBracket CanAssignValue1 |
+				 
 				 Period Identifier |
-				 LeftBracket Object RightBracket |
+				 QuestionMarkDot Identifier |
+				 LeftBracket Value RightBracket |
 				 Period FunctionCall |
-				 QuestionMarkDot LeftBracket Object RightBracket |
 				 QuestionMarkDot FunctionCall |
-				 QuestionMarkDot Period Identifier $
+				 QuestionMarkDot LeftBracket Value RightBracket $
 
 AssignStatement: CanAssignValueList AssignSymbol ValueList $
 
@@ -155,17 +168,29 @@ ParamList: Identifier Comma ParamList |
 // 函数调用
 FunctionCallParams : LeftPar ValueList RightPar | LeftPar RightPar $
 
-ValueList: Value | Value Comma ValueList $
+ValueList: Value | Value Comma | Value Comma ValueList $
 
-FunctionCall: Identifier FunctionCallParams FunctionCall1 | Identifier FunctionCall1 | Identifier FunctionCallParams $
+FunctionCall: Identifier FunctionCallParams FunctionCall1 | 
+			  Identifier QuestionMarkDot FunctionCallParams FunctionCall1 | 
+			  Identifier FunctionCall1 | 
+			  Identifier FunctionCallParams | 
+			  Identifier QuestionMarkDot FunctionCallParams |
+			  FunctionDefineParams Lambda CodeBlock FunctionCall1 $
 
 FunctionCall1: Period Identifier FunctionCallParams FunctionCall1 | 
 			   Period Identifier FunctionCallParams | 
+			   Period Identifier QuestionMarkDot FunctionCallParams FunctionCall1 | 
+			   Period Identifier QuestionMarkDot FunctionCallParams | 
 			   Period Identifier FunctionCall1 | 
+			   Period Identifier | 
 			   QuestionMarkDot Identifier FunctionCallParams FunctionCall1 | 
 			   QuestionMarkDot Identifier FunctionCallParams | 
+			   QuestionMarkDot Identifier QuestionMarkDot FunctionCallParams FunctionCall1 | 
+			   QuestionMarkDot Identifier QuestionMarkDot FunctionCallParams | 
 			   QuestionMarkDot Identifier FunctionCall1 | 
-			   LeftBracket Value RightBracket FunctionCall1 $
+			   QuestionMarkDot Identifier | 
+			   LeftBracket Value RightBracket FunctionCall1 |
+			   QuestionMarkDot LeftBracket Value RightBracket FunctionCall1 $
 
 
 
@@ -263,8 +288,6 @@ AsyncStatement: Async FunctionDefine $
 // import
 ImportStatement: Import String $
 
-MultiImportStatement: ImportStatement MultiImportStatement | ImportStatement $
-
 
 
 // 数组(完善)
@@ -300,3 +323,27 @@ MapAssignStatement2: MapAssignObject MultiMapAssignStatements |
 
 
 // 宏
+MacroIfStatement : MacroIf MacroDefineList MultiStatementWithoutMacroIfStatement MacroEndif |
+				   MacroIf MacroDefineList MacroEndif |
+				   MacroIf MacroDefineList MultiStatementWithoutMacroIfStatement MacroElse MultiStatementWithoutMacroIfStatement MacroEndif |
+				   MacroIf MacroDefineList MacroElse MultiStatementWithoutMacroIfStatement MacroEndif |
+				   MacroIf MacroDefineList MacroElse MacroEndif |
+				   MacroIf MacroDefineList MultiStatementWithoutMacroIfStatement MacroElseIfPart MacroEndif |
+				   MacroIf MacroDefineList MacroElseIfPart MacroEndif |
+				   MacroIf MacroDefineList MultiStatementWithoutMacroIfStatement MacroElseIfPart MacroElse MultiStatementWithoutMacroIfStatement MacroEndif |
+				   MacroIf MacroDefineList MacroElseIfPart MacroElse MultiStatementWithoutMacroIfStatement MacroEndif |
+				   MacroIf MacroDefineList MacroElseIfPart MacroElse MacroEndif $
+
+MacroElseIfPart : MacroElif Identifier MultiStatementWithoutMacroIfStatement MacroElseIfPart | 
+				  MacroElif Identifier MultiStatementWithoutMacroIfStatement |
+				  MacroElif Identifier MacroElseIfPart | 
+				  MacroElif Identifier $
+				  
+MacroDefineList : Identifier | 
+				  Not Identifier |
+				  LeftPar MacroDefineList RightPar |
+				  Identifier And MacroDefineList | 
+				  Identifier Or MacroDefineList |
+				  Not Identifier And MacroDefineList | 
+				  Not Identifier Or MacroDefineList |
+				  LeftPar MacroDefineList RightPar MacroDefineList $
