@@ -36,6 +36,12 @@ namespace Compiler.Lexical
                 long forward = stream.Position;
                 stringBuilder.Append(c);
 
+                if (c == '\n')
+                {
+                    lineForward++;
+                    positionOnNewLine = forward - 1;
+                }
+
                 if (isSingleLineComment)
                 {
                     if (c == '\n' || c == '\0')
@@ -79,12 +85,6 @@ namespace Compiler.Lexical
                         lexicalUnit = null;
                     }
                     continue;
-                }
-
-                if (c == '\n')
-                {
-                    lineForward++;
-                    positionOnNewLine = forward - 1;
                 }
 
                 if (CanMove(m_dfa, currentDFAStateId, c, out int nextStateId))
