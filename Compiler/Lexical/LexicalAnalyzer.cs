@@ -95,13 +95,14 @@ namespace Compiler.Lexical
                         if (c == '"' || c == '\'' || c == '`') // 对字符串的处理
                         {
                             char strStart = c;
+                            char lastChar;
                             do
                             {
+                                lastChar = c;
                                 c = ReadChar(stream);
                                 forward = stream.Position;
                                 stringBuilder.Append(c);
-
-                            } while (c != strStart && !c.Equals('\0'));
+                            } while (((lastChar == '\\' && c == strStart) || c != strStart) && !c.Equals('\0'));
 
                             if (c == strStart)
                             {
