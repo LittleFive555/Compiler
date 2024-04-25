@@ -56,14 +56,14 @@ namespace Compiler.Syntax
                     {
                         result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
                         // TODO try fix and continue
-                        throw new Exception();
+                        index++;
                     }
                 }
                 else if (currentSymbol.Equals(currentTokenName))
                 {
                     stack.Pop();
-                    //if (snapshotStack.Count > 0 && stack.Count < snapshotStack.Peek().CloneStack.Count)
-                    //    snapshotStack.Pop();
+                    while (snapshotStack.Count > 0 && snapshotStack.Peek().CanRemove(stack))
+                        snapshotStack.Pop();
                     index++;
                 }
                 else if (IsTerminalSymbol(currentSymbol))
@@ -77,7 +77,7 @@ namespace Compiler.Syntax
                     {
                         result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
                         // TODO try fix and continue
-                        throw new Exception();
+                        index++;
                     }
                 }
                 else if (!m_predictiveAnylisisTable[currentSymbol].ContainsKey(currentTokenName))
@@ -91,7 +91,7 @@ namespace Compiler.Syntax
                     {
                         result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
                         // TODO try fix and continue
-                        throw new Exception();
+                        index++;
                     }
                 }
                 else
@@ -103,24 +103,27 @@ namespace Compiler.Syntax
                     Production production;
                     if (syntaxProductions.Count == 1) // 只有一个产生式，选择该产生式
                         production = syntaxProductions[0];
+                    else if (syntaxProductions.Count == 2)
+                    {
+                        if (IsEmptyProduction(syntaxProductions[1])) // 第一个产生式非空，第二个产生式为空，选择非空
+                            production = syntaxProductions[0];
+                        else // 两个产生式全非空，则准备回溯（或许可能会当有空产生式时也回溯？）
+                        {
+                            var snapshot = new Snapshot(stack, index, 0);
+                            snapshotStack.Push(snapshot);
+                            production = syntaxProductions[0];
+                        }
+                    }
                     else
                     {
-                        //if (IsEmptyProduction(syntaxProductions[1])) // 第一个产生式非空，第二个产生式为空，选择非空
-                        //    production = syntaxProductions[0];
-                        //else // 两个产生式全非空，则准备回溯（或许可能会当有空产生式时也回溯？）
-                        //{
-                            int productionIndex = 0;
-                            var snapshot = new Snapshot(stack, index, productionIndex);
-                            snapshotStack.Push(snapshot);
-                            production = syntaxProductions[productionIndex];
-                        //}
+                        var snapshot = new Snapshot(stack, index, 0);
+                        snapshotStack.Push(snapshot);
+                        production = syntaxProductions[0];
                     }
 
                     if (IsEmptyProduction(production))
                     {
                         stack.Pop();
-                        //if (snapshotStack.Count > 0 && stack.Count < snapshotStack.Peek().CloneStack.Count)
-                        //    snapshotStack.Pop();
                     }
                     else
                     {
@@ -872,17 +875,41 @@ namespace Compiler.Syntax
 
         private class Snapshot
         {
-            public int StackHeight;
             public Stack<string> CloneStack;
             public int TokenIndex;
             public int ChosenProductionIndex;
 
             public Snapshot(Stack<string> stack, int tokenIndex, int chosenProductionIndex)
             {
-                StackHeight = stack.Count;
                 CloneStack = new Stack<string>(stack.Reverse());
+                var temp1 = CloneStack.Pop();
+                var temp2 = CloneStack.Pop();
+                CloneStack.Push(temp2);
+                CloneStack.Push(temp1);
                 TokenIndex = tokenIndex;
                 ChosenProductionIndex = chosenProductionIndex;
+            }
+
+            public bool CanRemove(Stack<string> stack)
+            {
+                if (stack.Count <= CloneStack.Count - 2)
+                {
+                    Stack<string> temp1 = new Stack<string>(stack.Reverse());
+                    Stack<string> temp2 = new Stack<string>(CloneStack.Reverse());
+
+                    while (temp2.Count > temp1.Count)
+                        temp2.Pop();
+
+                    bool isSame = true;
+                    while (isSame && temp1.Count > 0)
+                    {
+                        if (temp1.Pop() != temp2.Pop())
+                            isSame = false;
+                    }
+                    return isSame;
+                }
+                else
+                    return false;
             }
         }
     }
