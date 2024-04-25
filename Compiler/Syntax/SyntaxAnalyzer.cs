@@ -31,7 +31,7 @@ namespace Compiler.Syntax
             int index = 0;
             string currentSymbol = stack.Peek();
             int counter = 0;
-            while (currentSymbol != EndSymbol)
+            while (currentSymbol != EndSymbol || index < tokens.Count)
             {
                 counter = PrintAnalyzeProgress(tokens, stack, index, counter);
 
@@ -43,7 +43,23 @@ namespace Compiler.Syntax
 
                 var currentToken = tokens[Math.Clamp(index, 0, tokens.Count - 1)];
                 string currentTokenName = index < tokens.Count ? currentToken.LexicalUnit.Name : EndSymbol;
-                if (currentSymbol.Equals(currentTokenName))
+
+
+                if (index < tokens.Count && currentSymbol == EndSymbol)
+                {
+                    if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                    {
+                        stack = tempStack;
+                        index = tempIndex;
+                    }
+                    else
+                    {
+                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
+                        // TODO try fix and continue
+                        throw new Exception();
+                    }
+                }
+                else if (currentSymbol.Equals(currentTokenName))
                 {
                     stack.Pop();
                     //if (snapshotStack.Count > 0 && stack.Count < snapshotStack.Peek().CloneStack.Count)
