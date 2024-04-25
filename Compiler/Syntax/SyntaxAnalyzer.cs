@@ -54,7 +54,7 @@ namespace Compiler.Syntax
                     }
                     else
                     {
-                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
+                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, string.Format("Expect \"{0}\"", currentSymbol)));
                         // TODO try fix and continue
                         index++;
                     }
@@ -75,7 +75,7 @@ namespace Compiler.Syntax
                     }
                     else
                     {
-                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
+                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, string.Format("Expect \"{0}\"", currentSymbol)));
                         // TODO try fix and continue
                         stack.Pop();
                     }
@@ -89,7 +89,7 @@ namespace Compiler.Syntax
                     }
                     else
                     {
-                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, "..."));
+                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, string.Format("Expect \"{0}\"", currentSymbol)));
                         // TODO try fix and continue
                         index++;
                     }
