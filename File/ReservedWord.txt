@@ -36,4 +36,6 @@ Await:await
 True:true|TRUE|True
 False:false|FALSE|False
 Get:get
+
 New:new
+GlobalVar:gvar|global

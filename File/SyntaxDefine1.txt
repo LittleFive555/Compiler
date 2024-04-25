@@ -140,7 +140,7 @@ CanAssignValue1: Period Identifier CanAssignValue1 |
 				 QuestionMarkDot FunctionCall |
 				 QuestionMarkDot LeftBracket Value RightBracket $
 
-AssignStatement: CanAssignValueList AssignSymbol ValueList $
+AssignStatement: CanAssignValueList AssignSymbol ValueList | GlobalVar CanAssignValueList AssignSymbol ValueList $
 
 CanAssignValue: Identifier CanAssignValue1 | Identifier $
 
@@ -153,10 +153,13 @@ AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign 
 
 // 函数定义(完善) 无function关键词和无标识符的，只能是lambda表达式
 FunctionDefine: Function Identifier FunctionDefineParams CodeBlock | 
+				Function String FunctionDefineParams CodeBlock | 
 				Function FunctionDefineParams CodeBlock | 
 				Function CodeBlock $
 FunctionDefineWithoutKeyWord: Identifier FunctionDefineParams CodeBlock |
-							  Identifier CodeBlock $
+							  String FunctionDefineParams CodeBlock |
+							  Identifier CodeBlock |
+							  String CodeBlock $
 FunctionDefineParams: LeftPar ParamList RightPar | 
 					  LeftPar RightPar $
 ParamList: Identifier Comma ParamList |
@@ -238,13 +241,21 @@ WhileStatement: While LeftPar Value RightPar CodeBlock $
 
 
 // class定义(完善)
-ClassStatement: Class Identifier Colon Identifier ClassContent | Class Identifier ClassContent $
+ClassStatement: Class Identifier Colon Identifier ClassContent | 
+				Class String Colon Identifier ClassContent | 
+				Class Identifier ClassContent |
+				Class String ClassContent $
 
 ClassContent: LeftBrace ClassMultiFunctionDefine RightBrace | LeftBrace RightBrace $
 
 ClassMultiFunctionDefine: ClassFunctionDefine ClassMultiFunctionDefine | ClassFunctionDefine $
 
-ClassFunctionDefine: AsyncStatement | Get Identifier FunctionDefineParams CodeBlock | FunctionDefine | FunctionDefineWithoutKeyWord | Semicolon $
+ClassFunctionDefine: AsyncStatement | 
+					 Get Identifier FunctionDefineParams CodeBlock | 
+					 Get String FunctionDefineParams CodeBlock | 
+					 FunctionDefine | 
+					 FunctionDefineWithoutKeyWord | 
+					 Semicolon $
 
 
 
