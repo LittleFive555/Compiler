@@ -134,8 +134,7 @@ CanAssignValue1: IndexMember |
 				 PeriodFunction CanAssignValue1 |
 				 IndexMember CanAssignValue1 | 
 				 PeriodMember CanAssignValue1 | 
-				 FunctionCallParams CanAssignValue1 |
-				 QuestionMarkDot FunctionCallParams CanAssignValue1 $
+				 FunctionCallParams CanAssignValue1 $
 
 CanAssignValueList: CanAssignValue Comma CanAssignValueList | CanAssignValue $
 
@@ -162,7 +161,7 @@ ParamList: Identifier Comma ParamList |
 
 
 // 函数调用
-FunctionCallParams : LeftPar ValueList RightPar | LeftPar RightPar $
+FunctionCallParams : LeftPar ValueList RightPar | LeftPar RightPar | QuestionMarkDot LeftPar ValueList RightPar | QuestionMarkDot LeftPar RightPar $
 
 ValueList: Value | Value Comma | Value Params | Value Params Comma | Value Comma ValueList $
 
@@ -171,8 +170,6 @@ FunctionCall: Identifier FunctionCall1 |
 
 FunctionCall1: FunctionCallParams | 
 			   FunctionCallParams FunctionCall1 |
-			   QuestionMarkDot FunctionCallParams |
-			   QuestionMarkDot FunctionCallParams FunctionCall1 |
 			   PeriodFunction |
 			   PeriodFunction FunctionCall1 |
 			   PeriodMember FunctionCall1 | 
