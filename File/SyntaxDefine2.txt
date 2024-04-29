@@ -41,32 +41,37 @@ CodeBlock: LeftBrace MultiStatement RightBrace |
 		   
 		   
 
-Object: CanAssignValue |
-		SelfCalculate |
-		FunctionCall |
-		FunctionDefine |
-		ClassStatement |
-		LeftPar Value RightPar |
-		FunctionDefineParams Lambda CodeBlock | 
-		Async FunctionDefineParams Lambda CodeBlock | 
-		AsyncStatement |
-		
-		Null | 
-		Boolean | 
-		Number | 
-		String | 
-		
-		ArrayObject | 
-		MapObject | 
-		AwaitStatement |
-		
-		New Identifier FunctionCallParams | 
-		
+Object: ObjectFirst |
+		ObjectFirst CanAssignValue1 |
+		ObjectFirst FunctionCall1 |
 		Minus Object | 
 		Not Object | 
 		Negative Object |
 		
 		CanAssignValue AssignSymbol Value $
+		
+ObjectFirst: Identifier |
+			FunctionDefine |
+			ClassStatement |
+			Region |
+			FunctionDefineParams Lambda CodeBlock | 
+			Async FunctionDefineParams Lambda CodeBlock | 
+			AsyncStatement |
+			
+			Null | 
+			Boolean | 
+			Number | 
+			String | 
+			
+			New Identifier FunctionCallParams | 
+			
+			ArrayObject | 
+			MapObject | 
+			AwaitStatement $
+		
+		
+
+Region: LeftPar Value RightPar $
 
 
 
@@ -107,10 +112,8 @@ Operation5: Operation5 Multiply Operation6 |
 			Operation5 Modulo Operation6 | 
 			Operation6  $
 
-Operation6: Operation6 EmptyRet Factor | 
-			Factor $
-		
-Factor: Object | LeftPar Value RightPar $
+Operation6: Operation6 EmptyRet Object | 
+			Object $
 
 SelfCalculate: CanAssignValue DoublePlus |
 			   CanAssignValue DoubleMinus |
@@ -127,7 +130,7 @@ IdentifierList: Identifier Comma IdentifierList | Identifier $
 
 AssignStatement: CanAssignValueList AssignSymbol ValueList | GlobalVar CanAssignValueList AssignSymbol ValueList $
 
-CanAssignValue: Identifier | Identifier CanAssignValue1 $
+CanAssignValue: ObjectFirst | ObjectFirst CanAssignValue1 $
 
 CanAssignValue1: IndexMember | 
 				 PeriodMember | 
@@ -165,8 +168,7 @@ FunctionCallParams : LeftPar ValueList RightPar | LeftPar RightPar | QuestionMar
 
 ValueList: Value | Value Comma | Value Params | Value Params Comma | Value Comma ValueList $
 
-FunctionCall: Identifier FunctionCall1 |
-			  String Period Identifier FunctionCallParams $
+FunctionCall: ObjectFirst FunctionCall1 $
 
 FunctionCall1: FunctionCallParams | 
 			   FunctionCallParams FunctionCall1 |
