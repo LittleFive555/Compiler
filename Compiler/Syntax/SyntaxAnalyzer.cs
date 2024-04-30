@@ -247,7 +247,7 @@ namespace Compiler.Syntax
                         for (int j = 1; j < production.Symbols.Count; j++)
                             symbols.Add(production.Symbols[j]);
                         symbols.Add(name);
-                        productions.Add(new Production(name, symbols));
+                        productions.Add(new Production(symbols));
                     }
                     else
                     {
@@ -258,7 +258,7 @@ namespace Compiler.Syntax
                 if (haveLeftRecursion) // 只有存在左递归时，才对当前文法进行修改
                 {
                     // 给生成的新文法添加空表达式，并收集生成的新文法
-                    productions.Add(new Production(name, new List<string>() { Helpers.EmptyOperator.ToString() }));
+                    productions.Add(new Production(new List<string>() { Helpers.EmptyOperator.ToString() }));
                     newSyntaxLines.Add(name, new SyntaxLine(name, productions));
                     // 给当前修改的文法赋予新的表达式组
                     List<Production> eliminated = new List<Production>();
@@ -267,7 +267,7 @@ namespace Compiler.Syntax
                         List<string> symbols = new List<string>();
                         symbols.AddRange(production.Symbols);
                         symbols.Add(name);
-                        eliminated.Add(new Production(syntaxLinesList[i].Name, symbols));
+                        eliminated.Add(new Production(symbols));
                     }
                     syntaxLinesList[i].SetProductions(eliminated);
                 }
@@ -296,7 +296,7 @@ namespace Compiler.Syntax
                                 symbols.AddRange(production2.Symbols);
                             for (int k = 1; k < production.Symbols.Count; k++)
                                 symbols.Add(production.Symbols[k]);
-                            Production newProduction = new Production(currentSyntaxLine.Name, symbols);
+                            Production newProduction = new Production(symbols);
 
                             // 如果产生了完全相同的产生式，则跳过
                             bool haveSame = false;
@@ -429,13 +429,13 @@ namespace Compiler.Syntax
                             productionsToRemove.Add(toRemove);
 
                             if (leftCommonFactor.Count == toRemove.Symbols.Count)
-                                productionsForNew.Add(new Production(name, new List<string>() { Helpers.EmptyOperator.ToString() }));
+                                productionsForNew.Add(new Production(new List<string>() { Helpers.EmptyOperator.ToString() }));
                             else
                             {
                                 List<string> symbolsList = new List<string>();
                                 for (int j = leftCommonFactor.Count; j < toRemove.Symbols.Count; j++)
                                     symbolsList.Add(toRemove.Symbols[j]);
-                                productionsForNew.Add(new Production(name, symbolsList));
+                                productionsForNew.Add(new Production(symbolsList));
                             }
                         }
                         SyntaxLine newSyntaxLine = new SyntaxLine(name, productionsForNew);
@@ -453,7 +453,7 @@ namespace Compiler.Syntax
                         {
                             symbols.Add(withSameProductions.Name);
                         }
-                        Production newProductionForOld = new Production(syntaxLine.Name, symbols);
+                        Production newProductionForOld = new Production(symbols);
                         List<Production> productionsForOld = new List<Production>(syntaxLine.Productions);
                         foreach (var toRemove in productionsToRemove)
                             productionsForOld.Remove(toRemove);

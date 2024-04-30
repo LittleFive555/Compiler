@@ -66,14 +66,11 @@ namespace Compiler.Syntax
 
     public class Production : IEquatable<Production?>
     {
-        public string Belonged { get; }
-
         private List<string> m_symbols = new List<string>();
         public IReadOnlyList<string> Symbols => m_symbols;
 
-        public Production(string belonged, IEnumerable<string> symbols)
+        public Production(IEnumerable<string> symbols)
         {
-            Belonged = belonged;
             SetSymbolsList(symbols);
         }
 
@@ -91,7 +88,6 @@ namespace Compiler.Syntax
         public bool Equals(Production? other)
         {
             return other is not null &&
-                   Belonged == other.Belonged &&
                    IsSameSymbolsList(this, other);
         }
 
@@ -110,7 +106,7 @@ namespace Compiler.Syntax
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Belonged, Symbols);
+            return HashCode.Combine(Symbols);
         }
 
         public override string ToString()

@@ -31,7 +31,7 @@ namespace Compiler.Syntax
                     symbols.Add(symbol);
                 }
                 if (symbols.Count > 0)
-                    productions.Add(new Production(name, symbols));
+                    productions.Add(new Production(symbols));
             }
             SyntaxLine result = new SyntaxLine(name, productions);
             return result;
