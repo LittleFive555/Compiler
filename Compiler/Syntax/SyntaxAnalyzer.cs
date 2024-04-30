@@ -10,6 +10,8 @@ namespace Compiler.Syntax
 
         private const string StartSymbol = "S";
         private const string EndSymbol = "$";
+        private readonly SyntaxUnit StartSyntaxUnit = new SymbolName(StartSymbol);
+        private readonly SyntaxUnit EndSyntaxUnit = new SymbolName(EndSymbol);
 
         public SyntaxAnalyzer(Dictionary<string, SyntaxLine> syntaxLines)
         {
@@ -47,14 +49,14 @@ namespace Compiler.Syntax
             Result result = new Result();
 
             Stack<Snapshot> snapshotStack = new Stack<Snapshot>();
-            Stack<string> stack = new Stack<string>();
-            stack.Push(EndSymbol);
-            stack.Push(StartSymbol);
+            Stack<SyntaxUnit> stack = new Stack<SyntaxUnit>();
+            stack.Push(EndSyntaxUnit);
+            stack.Push(StartSyntaxUnit);
 
             int index = 0;
-            string currentSymbol = stack.Peek();
+            SyntaxUnit currentSyntaxUnit = stack.Peek();
             int counter = 0;
-            while (currentSymbol != EndSymbol || index < tokens.Count)
+            while (currentSyntaxUnit != EndSyntaxUnit || index < tokens.Count)
             {
                 counter = PrintAnalyzeProgress(tokens, stack, index, counter);
 
@@ -67,100 +69,106 @@ namespace Compiler.Syntax
                 var currentToken = tokens[Math.Clamp(index, 0, tokens.Count - 1)];
                 string currentTokenName = index < tokens.Count ? currentToken.LexicalUnit.Name : EndSymbol;
 
-
-                if (index < tokens.Count && currentSymbol == EndSymbol)
+                if (currentSyntaxUnit.SyntaxUnitType == SyntaxUnitType.SymbolName)
                 {
-                    if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                    if (index < tokens.Count && currentSyntaxUnit == EndSyntaxUnit)
                     {
-                        stack = tempStack;
-                        index = tempIndex;
+                        if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                        {
+                            stack = tempStack;
+                            index = tempIndex;
+                        }
+                        else
+                        {
+                            result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, string.Format("Expect \"{0}\"", currentSyntaxUnit)));
+                            // TODO try fix and continue
+                            index++;
+                        }
                     }
-                    else
+                    else if (currentSyntaxUnit.Content == currentTokenName)
                     {
-                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, string.Format("Expect \"{0}\"", currentSymbol)));
-                        // TODO try fix and continue
-                        index++;
-                    }
-                }
-                else if (currentSymbol == currentTokenName)
-                {
-                    stack.Pop();
-                    while (snapshotStack.Count > 0 && snapshotStack.Peek().CanRemove(stack))
-                        snapshotStack.Pop();
-                    index++;
-                }
-                else if (IsTerminalSymbol(currentSymbol))
-                {
-                    if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
-                    {
-                        stack = tempStack;
-                        index = tempIndex;
-                    }
-                    else
-                    {
-                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, string.Format("Expect \"{0}\"", currentSymbol)));
-                        // TODO try fix and continue
                         stack.Pop();
+                        while (snapshotStack.Count > 0 && snapshotStack.Peek().CanRemove(stack))
+                            snapshotStack.Pop();
+                        index++;
                     }
-                }
-                else if (!m_predictiveAnylisisTable[currentSymbol].ContainsKey(currentTokenName))
-                {
-                    if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                    else if (IsTerminalSymbol(currentSyntaxUnit.Content))
                     {
-                        stack = tempStack;
-                        index = tempIndex;
+                        if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                        {
+                            stack = tempStack;
+                            index = tempIndex;
+                        }
+                        else
+                        {
+                            result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, string.Format("Expect \"{0}\"", currentSyntaxUnit)));
+                            // TODO try fix and continue
+                            stack.Pop();
+                        }
+                    }
+                    else if (!m_predictiveAnylisisTable[currentSyntaxUnit.Content].ContainsKey(currentTokenName))
+                    {
+                        if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                        {
+                            stack = tempStack;
+                            index = tempIndex;
+                        }
+                        else
+                        {
+                            result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, string.Format("Expect \"{0}\"", currentSyntaxUnit)));
+                            // TODO try fix and continue
+                            index++;
+                        }
                     }
                     else
                     {
-                        result.AppendError(new CompileError(currentToken.Line, currentToken.StartColumn, currentToken.Length, string.Format("Expect \"{0}\"", currentSymbol)));
-                        // TODO try fix and continue
-                        index++;
-                    }
-                }
-                else
-                {
-                    var syntaxProductions = m_predictiveAnylisisTable[currentSymbol][currentTokenName];
-                    //if (syntaxProductions.Count > 2)
-                    //    throw new Exception();
+                        var syntaxProductions = m_predictiveAnylisisTable[currentSyntaxUnit.Content][currentTokenName];
+                        //if (syntaxProductions.Count > 2)
+                        //    throw new Exception();
 
-                    Production production;
-                    if (syntaxProductions.Count == 1) // 只有一个产生式，选择该产生式
-                        production = syntaxProductions[0];
-                    else if (syntaxProductions.Count == 2)
-                    {
-                        if (IsEmptyProduction(syntaxProductions[1])) // 第一个产生式非空，第二个产生式为空，选择非空
+                        Production production;
+                        if (syntaxProductions.Count == 1) // 只有一个产生式，选择该产生式
                             production = syntaxProductions[0];
-                        else // 两个产生式全非空，则准备回溯（或许可能会当有空产生式时也回溯？）
+                        else if (syntaxProductions.Count == 2)
+                        {
+                            if (IsEmptyProduction(syntaxProductions[1])) // 第一个产生式非空，第二个产生式为空，选择非空
+                                production = syntaxProductions[0];
+                            else // 两个产生式全非空，则准备回溯（或许可能会当有空产生式时也回溯？）
+                            {
+                                var snapshot = new Snapshot(stack, index, 0);
+                                snapshotStack.Push(snapshot);
+                                production = syntaxProductions[0];
+                            }
+                        }
+                        else
                         {
                             var snapshot = new Snapshot(stack, index, 0);
                             snapshotStack.Push(snapshot);
                             production = syntaxProductions[0];
                         }
-                    }
-                    else
-                    {
-                        var snapshot = new Snapshot(stack, index, 0);
-                        snapshotStack.Push(snapshot);
-                        production = syntaxProductions[0];
-                    }
 
-                    if (IsEmptyProduction(production))
-                    {
-                        stack.Pop();
-                    }
-                    else
-                    {
-                        stack.Pop();
-                        for (int i = production.Symbols.Count - 1; i >= 0; i--)
-                            stack.Push(production.Symbols[i]);
+                        if (IsEmptyProduction(production))
+                        {
+                            stack.Pop();
+                        }
+                        else
+                        {
+                            stack.Pop();
+                            for (int i = production.SyntaxUnitList.Count - 1; i >= 0; i--)
+                                stack.Push(production.SyntaxUnitList[i]);
+                        }
                     }
                 }
-                currentSymbol = stack.Peek();
+                else if (currentSyntaxUnit.SyntaxUnitType == SyntaxUnitType.ParseAction)
+                {
+                    (currentSyntaxUnit as ParseAction).Execute();
+                }
+                currentSyntaxUnit = stack.Peek();
             }
             return result;
         }
 
-        private bool TryRecall(List<Token> tokens, Stack<Snapshot> snapshotStack, out Stack<string> stack, out int index)
+        private bool TryRecall(List<Token> tokens, Stack<Snapshot> snapshotStack, out Stack<SyntaxUnit> stack, out int index)
         {
             while (snapshotStack.Count > 0)
             {
@@ -168,7 +176,7 @@ namespace Compiler.Syntax
                 var currentToken = tokens[Math.Clamp(snapshot.TokenIndex, 0, tokens.Count - 1)];
                 var currentTokenName = snapshot.TokenIndex < tokens.Count ? currentToken.LexicalUnit.Name : EndSymbol;
                 var currentSymbol = snapshot.CloneStack.Peek();
-                var syntaxProductions = m_predictiveAnylisisTable[currentSymbol][currentTokenName];
+                var syntaxProductions = m_predictiveAnylisisTable[currentSymbol.Content][currentTokenName];
                 if (snapshot.ChosenProductionIndex + 1 < syntaxProductions.Count)
                 {
 
@@ -179,12 +187,12 @@ namespace Compiler.Syntax
                     }
                     else
                     {
-                        stack = new Stack<string>(snapshot.CloneStack.Reverse());
+                        stack = new Stack<SyntaxUnit>(snapshot.CloneStack.Reverse());
                         index = snapshot.TokenIndex;
 
                         stack.Pop();
-                        for (int i = production.Symbols.Count - 1; i >= 0; i--)
-                            stack.Push(production.Symbols[i]);
+                        for (int i = production.SyntaxUnitList.Count - 1; i >= 0; i--)
+                            stack.Push(production.SyntaxUnitList[i]);
 
                         return true;
                     }
@@ -217,7 +225,7 @@ namespace Compiler.Syntax
 
         private static bool IsEmptyProduction(Production production)
         {
-            return production.Symbols.Count == 1 && production.Symbols[0] == Helpers.EmptyOperator.ToString();
+            return production.SyntaxUnitList.Count == 1 && production.SyntaxUnitList[0].Content == Helpers.EmptyOperator.ToString();
         }
 
         #region 消除左递归部分
@@ -231,22 +239,23 @@ namespace Compiler.Syntax
             var syntaxLinesList = SortSyntaxLine(m_syntaxLines);
             for (int i = 0; i < syntaxLinesList.Count; i++)
             {
-                ReplaceFirstSymbol(syntaxLinesList[i], syntaxLinesList.GetRange(0, i));
+                var currentSyntaxLine = syntaxLinesList[i];
+                ReplaceFirstSymbol(currentSyntaxLine, syntaxLinesList.GetRange(0, i));
                 // 消除新产生式的直接左递归
                 List<Production> notLeftRecursionProductions = new List<Production>();
                 bool haveLeftRecursion = false;
-                string name = GetNewSyntaxLineName(newSyntaxLines, syntaxLinesList[i].Name);
+                string name = GetNewSyntaxLineName(newSyntaxLines, currentSyntaxLine.Name);
                 List<Production> productions = new List<Production>();
-                foreach (var production in syntaxLinesList[i].Productions)
+                foreach (var production in currentSyntaxLine.Productions)
                 {
-                    if (production.Symbols[0] == syntaxLinesList[i].Name)
+                    if (production.SyntaxUnitList[0].Content == currentSyntaxLine.Name)
                     {
                         haveLeftRecursion = true;
                         // 构建左递归表达式的替代表达式
-                        List<string> symbols = new List<string>();
-                        for (int j = 1; j < production.Symbols.Count; j++)
-                            symbols.Add(production.Symbols[j]);
-                        symbols.Add(name);
+                        List<SyntaxUnit> symbols = new List<SyntaxUnit>();
+                        for (int j = 1; j < production.SyntaxUnitList.Count; j++)
+                            symbols.Add(production.SyntaxUnitList[j]);
+                        symbols.Add(new SymbolName(name));
                         productions.Add(new Production(symbols));
                     }
                     else
@@ -258,18 +267,18 @@ namespace Compiler.Syntax
                 if (haveLeftRecursion) // 只有存在左递归时，才对当前文法进行修改
                 {
                     // 给生成的新文法添加空表达式，并收集生成的新文法
-                    productions.Add(new Production(new List<string>() { Helpers.EmptyOperator.ToString() }));
+                    productions.Add(new Production(new List<SyntaxUnit>() { new SymbolName(Helpers.EmptyOperator.ToString()) }));
                     newSyntaxLines.Add(name, new SyntaxLine(name, productions));
                     // 给当前修改的文法赋予新的表达式组
                     List<Production> eliminated = new List<Production>();
                     foreach (var production in notLeftRecursionProductions)
                     {
-                        List<string> symbols = new List<string>();
-                        symbols.AddRange(production.Symbols);
-                        symbols.Add(name);
+                        List<SyntaxUnit> symbols = new List<SyntaxUnit>();
+                        symbols.AddRange(production.SyntaxUnitList);
+                        symbols.Add(new SymbolName(name));
                         eliminated.Add(new Production(symbols));
                     }
-                    syntaxLinesList[i].SetProductions(eliminated);
+                    currentSyntaxLine.SetProductions(eliminated);
                 }
             }
             // 将新产生的文法加入到文法列表中
@@ -286,17 +295,29 @@ namespace Compiler.Syntax
                 // 其中Aj->X1|X2|...|Xk是所有的Aj产生式
                 foreach (var production in currentSyntaxLine.Productions)
                 {
-                    if (production.Symbols[0] == syntaxLinesBeforeCurrent[i].Name)
+                    List<SyntaxUnit> tempList = new List<SyntaxUnit>();
+                    List<SyntaxUnit> symbols = new List<SyntaxUnit>(production.SyntaxUnitList);
+                    for (int j = 0; j < symbols.Count; j++)
+                    {
+                        if (symbols[j].SyntaxUnitType == SyntaxUnitType.ParseAction)
+                        {
+                            tempList.Add(symbols[j]);
+                            symbols.RemoveAt(j);
+                            j--;
+                        }
+                    }
+                    if (symbols[0].Content == syntaxLinesBeforeCurrent[i].Name)
                     {
                         productionsToReplace.Add(production, new List<Production>());
                         foreach (var production2 in syntaxLinesBeforeCurrent[i].Productions)
                         {
-                            List<string> symbols = new List<string>();
-                            if (!IsEmptyProduction(production2) || production.Symbols.Count < 2)
-                                symbols.AddRange(production2.Symbols);
-                            for (int k = 1; k < production.Symbols.Count; k++)
-                                symbols.Add(production.Symbols[k]);
-                            Production newProduction = new Production(symbols);
+                            List<SyntaxUnit> newSymbolsList = new List<SyntaxUnit>();
+                            newSymbolsList.AddRange(tempList);
+                            if (!IsEmptyProduction(production2) || production.SyntaxUnitList.Count < 2)
+                                newSymbolsList.AddRange(production2.SyntaxUnitList);
+                            for (int k = 1; k < production.SyntaxUnitList.Count; k++)
+                                newSymbolsList.Add(production.SyntaxUnitList[k]);
+                            Production newProduction = new Production(newSymbolsList);
 
                             // 如果产生了完全相同的产生式，则跳过
                             bool haveSame = false;
@@ -357,13 +378,14 @@ namespace Compiler.Syntax
             {
                 foreach (var production in syntaxLine.Value.Productions)
                 {
-                    if (syntaxLinesDic.ContainsKey(production.Symbols[0])) // 非终结符
+                    string firstSymbolName = production.SyntaxUnitList[0].Content;
+                    if (syntaxLinesDic.ContainsKey(firstSymbolName)) // 非终结符
                     {
-                        if (production.Symbols[0] == syntaxLine.Key)
+                        if (firstSymbolName == syntaxLine.Key)
                             continue;
 
-                        if (!beUsedDic[production.Symbols[0]].Contains(syntaxLine.Key))
-                            beUsedDic[production.Symbols[0]].Add(syntaxLine.Key);
+                        if (!beUsedDic[firstSymbolName].Contains(syntaxLine.Key))
+                            beUsedDic[firstSymbolName].Add(syntaxLine.Key);
                     }
                 }
             }
@@ -413,7 +435,7 @@ namespace Compiler.Syntax
                 {
                     List<int> indexesHaveLeftCommonFactor = new List<int>();
                     indexesHaveLeftCommonFactor.Add(i);
-                    List<string> leftCommonFactor = new List<string>();
+                    List<SyntaxUnit> leftCommonFactor = new List<SyntaxUnit>();
                     GetLeftCommonFactorRecursively(syntaxLine, i, ref indexesHaveLeftCommonFactor, ref leftCommonFactor);
                     if (indexesHaveLeftCommonFactor.Count > 1)
                     {
@@ -428,13 +450,13 @@ namespace Compiler.Syntax
                             var toRemove = syntaxLine.Productions[index];
                             productionsToRemove.Add(toRemove);
 
-                            if (leftCommonFactor.Count == toRemove.Symbols.Count)
-                                productionsForNew.Add(new Production(new List<string>() { Helpers.EmptyOperator.ToString() }));
+                            if (leftCommonFactor.Count == toRemove.SyntaxUnitList.Count)
+                                productionsForNew.Add(new Production(new List<SyntaxUnit>() { new SymbolName(Helpers.EmptyOperator.ToString()) }));
                             else
                             {
-                                List<string> symbolsList = new List<string>();
-                                for (int j = leftCommonFactor.Count; j < toRemove.Symbols.Count; j++)
-                                    symbolsList.Add(toRemove.Symbols[j]);
+                                List<SyntaxUnit> symbolsList = new List<SyntaxUnit>();
+                                for (int j = leftCommonFactor.Count; j < toRemove.SyntaxUnitList.Count; j++)
+                                    symbolsList.Add(toRemove.SyntaxUnitList[j]);
                                 productionsForNew.Add(new Production(symbolsList));
                             }
                         }
@@ -442,16 +464,16 @@ namespace Compiler.Syntax
 
                         // 对旧的文法移除包含左公因子的表达式，并添加新替换的表达式
                         SyntaxLine withSameProductions = GetSyntaxLineWithSameProductions(newSyntaxLines, newSyntaxLine);
-                        List<string> symbols = new List<string>();
+                        List<SyntaxUnit> symbols = new List<SyntaxUnit>();
                         symbols.AddRange(leftCommonFactor);
                         if (withSameProductions == null)
                         {
-                            symbols.Add(name);
+                            symbols.Add(new SymbolName(name));
                             newSyntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
                         }
                         else
                         {
-                            symbols.Add(withSameProductions.Name);
+                            symbols.Add(new SymbolName(withSameProductions.Name));
                         }
                         Production newProductionForOld = new Production(symbols);
                         List<Production> productionsForOld = new List<Production>(syntaxLine.Productions);
@@ -495,16 +517,16 @@ namespace Compiler.Syntax
             return withSameProductions;
         }
 
-        private void GetLeftCommonFactorRecursively(SyntaxLine syntaxLine, int i, ref List<int> indexesHaveLeftCommonFactor, ref List<string> leftCommonFactor)
+        private void GetLeftCommonFactorRecursively(SyntaxLine syntaxLine, int i, ref List<int> indexesHaveLeftCommonFactor, ref List<SyntaxUnit> leftCommonFactor)
         {
             List<int> indexesOnStart = new List<int>(indexesHaveLeftCommonFactor);
-            if (leftCommonFactor.Count == syntaxLine.Productions[i].Symbols.Count) // 如果左公因子个数已经达到当前的符号个数，则停止
+            if (leftCommonFactor.Count == syntaxLine.Productions[i].SyntaxUnitList.Count) // 如果左公因子个数已经达到当前的符号个数，则停止
                 return;
 
-            leftCommonFactor.Add(syntaxLine.Productions[i].Symbols[leftCommonFactor.Count]);
+            leftCommonFactor.Add(syntaxLine.Productions[i].SyntaxUnitList[leftCommonFactor.Count]);
             for (int j = i + 1; j < syntaxLine.Productions.Count; j++)
             {
-                if (IsPrefix(leftCommonFactor, syntaxLine.Productions[j].Symbols))
+                if (IsPrefix(leftCommonFactor, syntaxLine.Productions[j].SyntaxUnitList))
                 {
                     if (!indexesHaveLeftCommonFactor.Contains(j))
                         indexesHaveLeftCommonFactor.Add(j);
@@ -528,11 +550,11 @@ namespace Compiler.Syntax
             }
         }
 
-        private bool IsPrefix(IReadOnlyList<string> prefix, IReadOnlyList<string> stringList)
+        private bool IsPrefix(IReadOnlyList<SyntaxUnit> prefix, IReadOnlyList<SyntaxUnit> syntaxUnitList)
         {
             for (int i = 0; i < prefix.Count; i++)
             {
-                if (i >= stringList.Count || prefix[i] != stringList[i])
+                if (i >= syntaxUnitList.Count || prefix[i] != syntaxUnitList[i])
                     return false;
             }
             return true;
@@ -573,10 +595,10 @@ namespace Compiler.Syntax
                     allSymbols.Add(syntaxLine.Name);
                 foreach (var production in syntaxLine.Productions)
                 {
-                    foreach (var symbol in production.Symbols)
+                    foreach (var symbol in production.SyntaxUnitList)
                     {
-                        if (!allSymbols.Contains(symbol))
-                            allSymbols.Add(symbol);
+                        if (symbol.SyntaxUnitType == SyntaxUnitType.SymbolName && !allSymbols.Contains(symbol.Content))
+                            allSymbols.Add(symbol.Content);
                     }
                 }
             }
@@ -613,15 +635,19 @@ namespace Compiler.Syntax
                     }
                     else
                     {
-                        foreach (var productionSymbol in production.Symbols)
+                        foreach (var syntaxUnit in production.SyntaxUnitList)
                         {
-                            if (!firstSet.ContainsKey(productionSymbol))
-                                SymbolFirstSetRecursively(firstSet, productionSymbol);
+                            if (syntaxUnit.SyntaxUnitType != SyntaxUnitType.SymbolName)
+                                continue;
+
+                            string symbolName = syntaxUnit.Content;
+                            if (!firstSet.ContainsKey(symbolName))
+                                SymbolFirstSetRecursively(firstSet, symbolName);
 
                             if (haveEmptyProduction)
-                                firstSet[symbol].UnionWith(firstSet[productionSymbol]);
+                                firstSet[symbol].UnionWith(firstSet[symbolName]);
 
-                            if (!firstSet[productionSymbol].Contains(Helpers.EmptyOperator.ToString()))
+                            if (!firstSet[symbolName].Contains(Helpers.EmptyOperator.ToString()))
                                 haveEmptyProduction = false;
                         }
                     }
@@ -665,13 +691,25 @@ namespace Compiler.Syntax
                     {
                         foreach (var production in syntaxLine.Productions)
                         {
-                            for (int i = 0; i < production.Symbols.Count; i++)
+                            for (int i = 0; i < production.SyntaxUnitList.Count; i++)
                             {
-                                var currentSymbol = production.Symbols[i];
-                                if (currentSymbol == nonTerminalSymbol && i + 1 < production.Symbols.Count)
+                                var syntaxUnit = production.SyntaxUnitList[i];
+                                if (syntaxUnit.SyntaxUnitType != SyntaxUnitType.SymbolName)
+                                    continue;
+
+                                SyntaxUnit? nextSymbolName = null;
+                                int offset = 1;
+                                while (i + offset < production.SyntaxUnitList.Count)
                                 {
-                                    var nextSymbol = production.Symbols[i + 1];
-                                    var firstSetWithoutEmpty = new HashSet<string>(firstSet[nextSymbol]);
+                                    if (production.SyntaxUnitList[i + offset].SyntaxUnitType == SyntaxUnitType.SymbolName)
+                                    {
+                                        nextSymbolName = production.SyntaxUnitList[i + offset];
+                                        break;
+                                    }
+                                }
+                                if (syntaxUnit.Content == nonTerminalSymbol && nextSymbolName != null)
+                                {
+                                    var firstSetWithoutEmpty = new HashSet<string>(firstSet[nextSymbolName.Content]);
                                     firstSetWithoutEmpty.ExceptWith(new HashSet<string>() { Helpers.EmptyOperator.ToString() });
                                     if (!followSet[nonTerminalSymbol].IsSupersetOf(firstSetWithoutEmpty))
                                     {
@@ -679,8 +717,8 @@ namespace Compiler.Syntax
                                         followSet[nonTerminalSymbol].UnionWith(firstSetWithoutEmpty);
                                     }
                                 }
-                                if ((currentSymbol == nonTerminalSymbol && i + 1 == production.Symbols.Count)
-                                    || (i + 1 < production.Symbols.Count && firstSet[production.Symbols[i + 1]].Contains(Helpers.EmptyOperator.ToString())))
+                                if ((syntaxUnit.Content == nonTerminalSymbol && i + 1 == production.SyntaxUnitList.Count)
+                                    || (nextSymbolName != null && firstSet[nextSymbolName.Content].Contains(Helpers.EmptyOperator.ToString())))
                                 {
                                     if (followSet.ContainsKey(syntaxLine.Name))
                                     {
@@ -729,10 +767,13 @@ namespace Compiler.Syntax
                         currentProductionFirst.Add(Helpers.EmptyOperator.ToString());
                     else
                     {
-                        foreach (var symbol in production.Symbols)
+                        foreach (var symbol in production.SyntaxUnitList)
                         {
-                            currentProductionFirst.UnionWith(firstSet[symbol]);
-                            if (!firstSet[symbol].Contains(Helpers.EmptyOperator.ToString()))
+                            if (symbol.SyntaxUnitType != SyntaxUnitType.SymbolName)
+                                continue;
+
+                            currentProductionFirst.UnionWith(firstSet[symbol.Content]);
+                            if (!firstSet[symbol.Content].Contains(Helpers.EmptyOperator.ToString()))
                                 break;
                         }
                         foreach (var first in currentProductionFirst)
@@ -836,7 +877,7 @@ namespace Compiler.Syntax
             MyLogger.WriteLine(stringBuilder.ToString());
         }
 
-        private static int PrintAnalyzeProgress(List<Token> tokens, Stack<string> stack, int index, int counter)
+        private static int PrintAnalyzeProgress(List<Token> tokens, Stack<SyntaxUnit> stack, int index, int counter)
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("");
@@ -877,13 +918,13 @@ namespace Compiler.Syntax
 
         private class Snapshot
         {
-            public Stack<string> CloneStack;
+            public Stack<SyntaxUnit> CloneStack;
             public int TokenIndex;
             public int ChosenProductionIndex;
 
-            public Snapshot(Stack<string> stack, int tokenIndex, int chosenProductionIndex)
+            public Snapshot(Stack<SyntaxUnit> stack, int tokenIndex, int chosenProductionIndex)
             {
-                CloneStack = new Stack<string>(stack.Reverse());
+                CloneStack = new Stack<SyntaxUnit>(stack.Reverse());
                 var temp1 = CloneStack.Pop();
                 var temp2 = CloneStack.Pop();
                 CloneStack.Push(temp2);
@@ -892,12 +933,12 @@ namespace Compiler.Syntax
                 ChosenProductionIndex = chosenProductionIndex;
             }
 
-            public bool CanRemove(Stack<string> stack)
+            public bool CanRemove(Stack<SyntaxUnit> stack)
             {
                 if (stack.Count <= CloneStack.Count - 2)
                 {
-                    Stack<string> temp1 = new Stack<string>(stack.Reverse());
-                    Stack<string> temp2 = new Stack<string>(CloneStack.Reverse());
+                    Stack<SyntaxUnit> temp1 = new Stack<SyntaxUnit>(stack.Reverse());
+                    Stack<SyntaxUnit> temp2 = new Stack<SyntaxUnit>(CloneStack.Reverse());
 
                     while (temp2.Count > temp1.Count)
                         temp2.Pop();

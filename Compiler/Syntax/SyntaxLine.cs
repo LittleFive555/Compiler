@@ -64,20 +64,100 @@ namespace Compiler.Syntax
         }
     }
 
+    internal enum SyntaxUnitType
+    {
+        SymbolName,
+        ParseAction,
+    }
+
+    public abstract class SyntaxUnit : IEquatable<SyntaxUnit?>
+    {
+        internal SyntaxUnitType SyntaxUnitType;
+
+        public string Content;
+
+        public SyntaxUnit(string content)
+        {
+            Content = content;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return Content == (obj as SyntaxUnit)?.Content;
+        }
+
+        public bool Equals(SyntaxUnit? other)
+        {
+            return other is not null &&
+                   SyntaxUnitType == other.SyntaxUnitType &&
+                   Content == other.Content;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(SyntaxUnitType, Content);
+        }
+
+        public static bool operator ==(SyntaxUnit? left, SyntaxUnit? right)
+        {
+            return EqualityComparer<SyntaxUnit>.Default.Equals(left, right);
+        }
+
+        public static bool operator !=(SyntaxUnit? left, SyntaxUnit? right)
+        {
+            return !(left == right);
+        }
+
+        public override string ToString()
+        {
+            return Content;
+        }
+    }
+
+    public abstract class ParseAction : SyntaxUnit
+    {
+        public ParseAction(string content) : base(content)
+        {
+            SyntaxUnitType = SyntaxUnitType.ParseAction;
+        }
+
+        public abstract void Execute();
+    }
+
+    public class ParseActionPrint : ParseAction
+    {
+        public ParseActionPrint(string content) : base(content)
+        {
+        }
+
+        public override void Execute()
+        {
+            Console.WriteLine("Execute Print.");
+        }
+    }
+
+    public class SymbolName : SyntaxUnit
+    {
+        public SymbolName(string content) : base(content)
+        {
+            SyntaxUnitType = SyntaxUnitType.SymbolName;
+        }
+    }
+
     public class Production : IEquatable<Production?>
     {
-        private List<string> m_symbols = new List<string>();
-        public IReadOnlyList<string> Symbols => m_symbols;
+        private List<SyntaxUnit> m_syntaxUnitList = new List<SyntaxUnit>();
+        public IReadOnlyList<SyntaxUnit> SyntaxUnitList => m_syntaxUnitList;
 
-        public Production(IEnumerable<string> symbols)
+        public Production(IEnumerable<SyntaxUnit> symbols)
         {
             SetSymbolsList(symbols);
         }
 
-        public void SetSymbolsList(IEnumerable<string> symbols)
+        public void SetSymbolsList(IEnumerable<SyntaxUnit> symbols)
         {
-            m_symbols.Clear();
-            m_symbols.AddRange(symbols);
+            m_syntaxUnitList.Clear();
+            m_syntaxUnitList.AddRange(symbols);
         }
 
         public override bool Equals(object? obj)
@@ -93,12 +173,12 @@ namespace Compiler.Syntax
 
         public static bool IsSameSymbolsList(Production production1, Production production2)
         {
-            if (production1.Symbols.Count != production2.Symbols.Count)
+            if (production1.SyntaxUnitList.Count != production2.SyntaxUnitList.Count)
                 return false;
 
-            for (int i = 0; i < production1.Symbols.Count; i++)
+            for (int i = 0; i < production1.SyntaxUnitList.Count; i++)
             {
-                if (production1.Symbols[i] != production2.Symbols[i])
+                if (production1.SyntaxUnitList[i] != production2.SyntaxUnitList[i])
                     return false;
             }
             return true;
@@ -106,13 +186,13 @@ namespace Compiler.Syntax
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Symbols);
+            return HashCode.Combine(SyntaxUnitList);
         }
 
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();
-            foreach (var symbol in Symbols)
+            foreach (var symbol in SyntaxUnitList)
             {
                 stringBuilder.Append(symbol);
                 stringBuilder.Append(' ');

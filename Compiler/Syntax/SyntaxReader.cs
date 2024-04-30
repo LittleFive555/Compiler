@@ -21,15 +21,44 @@ namespace Compiler.Syntax
                 if (string.IsNullOrEmpty(trimed))
                     continue;
 
-                string[] splitedSymbols = trimed.Split(' ');
-                List<string> symbols = new List<string>();
-                foreach (var symbol in splitedSymbols)
+                List<SyntaxUnit> symbols = new List<SyntaxUnit>();
+                StringBuilder stringBuilder = new StringBuilder();
+                for (int i = 0; i < trimed.Length; i++)
                 {
-                    if (string.IsNullOrEmpty(symbol))
-                        continue;
+                    char c = trimed[i];
+                    if (c == '{')
+                    {
+                        stringBuilder.Append(c);
+                        while (c != '}' && i < trimed.Length)
+                        {
+                            c = trimed[++i];
+                            stringBuilder.Append(c);
+                        }
+                        if (stringBuilder[stringBuilder.Length - 1] != '}')
+                            throw new Exception();
 
-                    symbols.Add(symbol);
+                        symbols.Add(new ParseActionPrint(stringBuilder.ToString()));
+                        stringBuilder.Clear();
+                    }
+                    else if (char.IsWhiteSpace(c))
+                    {
+                        if (stringBuilder.Length > 0)
+                        {
+                            symbols.Add(new SymbolName(stringBuilder.ToString()));
+                            stringBuilder.Clear();
+                        }
+                    }
+                    else
+                    {
+                        stringBuilder.Append(c);
+                    }
                 }
+                if (stringBuilder.Length > 0)
+                {
+                    symbols.Add(new SymbolName(stringBuilder.ToString()));
+                    stringBuilder.Clear();
+                }
+
                 if (symbols.Count > 0)
                     productions.Add(new Production(symbols));
             }
