@@ -1,6 +1,4 @@
-﻿using Microsoft.Win32.SafeHandles;
-using System.Text;
-using System.Text.Unicode;
+﻿using System.Text;
 
 namespace Compiler
 {
