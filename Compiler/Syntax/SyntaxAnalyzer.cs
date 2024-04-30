@@ -16,7 +16,30 @@ namespace Compiler.Syntax
             m_syntaxLines = syntaxLines;
             if (!m_syntaxLines.ContainsKey(StartSymbol))
                 throw new Exception("没有文法开始符号 S ，请检查是否有产生式左侧命名为 S 的文法");
-            Initialize();
+
+            EliminateEmptyProduction();
+
+            EliminateCircle();
+
+            EliminateLeftRecursion();
+            PrintSyntaxLines("After EliminateLeftRecursion");
+
+            ExtractLeftCommonFactor(m_syntaxLines.Values);
+            PrintSyntaxLines("After ExtractLeftCommonFactor");
+
+            var firstSet = FirstSet();
+            PrintFirstOrFollowSet("First", firstSet);
+
+            var followSet = FollowSet(firstSet);
+            PrintFirstOrFollowSet("Follow", followSet);
+
+            if (!IsValidLL1())
+            {
+                throw new Exception();
+            }
+
+            m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
+            PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
         }
 
         public Result Execute(List<Token> tokens)
@@ -176,33 +199,6 @@ namespace Compiler.Syntax
             return false;
         }
 
-        private void Initialize()
-        {
-            EliminateEmptyProduction();
-
-            EliminateCircle();
-
-            EliminateLeftRecursion();
-            PrintSyntaxLines("After EliminateLeftRecursion");
-
-            ExtractLeftCommonFactor(m_syntaxLines.Values);
-            PrintSyntaxLines("After ExtractLeftCommonFactor");
-
-            var firstSet = FirstSet();
-            PrintFirstOrFollowSet("First", firstSet);
-
-            var followSet = FollowSet(firstSet);
-            PrintFirstOrFollowSet("Follow", followSet);
-
-            if (!IsValidLL1())
-            {
-                throw new Exception();
-            }
-
-            m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
-            PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
-        }
-
         /// <summary>
         /// 消除空表达式
         /// </summary>
@@ -219,7 +215,7 @@ namespace Compiler.Syntax
             // TODO
         }
 
-        private bool IsEmptyProduction(Production production)
+        private static bool IsEmptyProduction(Production production)
         {
             return production.Symbols.Count == 1 && production.Symbols[0] == Helpers.EmptyOperator.ToString();
         }
@@ -235,23 +231,23 @@ namespace Compiler.Syntax
             var syntaxLinesList = SortSyntaxLine(m_syntaxLines);
             for (int i = 0; i < syntaxLinesList.Count; i++)
             {
-                ReplaceFirstSymbol(syntaxLinesList, i);
+                ReplaceFirstSymbol(syntaxLinesList[i], syntaxLinesList.GetRange(0, i));
                 // 消除新产生式的直接左递归
-                SyntaxLine newSyntaxLine = new SyntaxLine();
-                newSyntaxLine.Name = GetNewName(newSyntaxLines, syntaxLinesList[i].Name);
                 List<Production> notLeftRecursionProductions = new List<Production>();
                 bool haveLeftRecursion = false;
+                string name = GetNewSyntaxLineName(newSyntaxLines, syntaxLinesList[i].Name);
+                List<Production> productions = new List<Production>();
                 foreach (var production in syntaxLinesList[i].Productions)
                 {
                     if (production.Symbols[0] == syntaxLinesList[i].Name)
                     {
                         haveLeftRecursion = true;
                         // 构建左递归表达式的替代表达式
-                        Production production1 = new Production(newSyntaxLine.Name);
+                        List<string> symbols = new List<string>();
                         for (int j = 1; j < production.Symbols.Count; j++)
-                            production1.Symbols.Add(production.Symbols[j]);
-                        production1.Symbols.Add(newSyntaxLine.Name);
-                        newSyntaxLine.Productions.Add(production1);
+                            symbols.Add(production.Symbols[j]);
+                        symbols.Add(name);
+                        productions.Add(new Production(name, symbols));
                     }
                     else
                     {
@@ -262,21 +258,18 @@ namespace Compiler.Syntax
                 if (haveLeftRecursion) // 只有存在左递归时，才对当前文法进行修改
                 {
                     // 给生成的新文法添加空表达式，并收集生成的新文法
-                    newSyntaxLine.Productions.Add(new Production(newSyntaxLine.Name)
-                    {
-                        Symbols = new List<string>() { Helpers.EmptyOperator.ToString() }
-                    });
-                    newSyntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
+                    productions.Add(new Production(name, new List<string>() { Helpers.EmptyOperator.ToString() }));
+                    newSyntaxLines.Add(name, new SyntaxLine(name, productions));
                     // 给当前修改的文法赋予新的表达式组
                     List<Production> eliminated = new List<Production>();
-                    foreach (var aa in notLeftRecursionProductions)
+                    foreach (var production in notLeftRecursionProductions)
                     {
-                        Production newProduction = new Production(syntaxLinesList[i].Name);
-                        newProduction.Symbols.AddRange(aa.Symbols);
-                        newProduction.Symbols.Add(newSyntaxLine.Name);
-                        eliminated.Add(newProduction);
+                        List<string> symbols = new List<string>();
+                        symbols.AddRange(production.Symbols);
+                        symbols.Add(name);
+                        eliminated.Add(new Production(syntaxLinesList[i].Name, symbols));
                     }
-                    syntaxLinesList[i].Productions = eliminated;
+                    syntaxLinesList[i].SetProductions(eliminated);
                 }
             }
             // 将新产生的文法加入到文法列表中
@@ -284,32 +277,26 @@ namespace Compiler.Syntax
                 AddNewSyntaxLine(newSyntaxLine);
         }
 
-        private void ReplaceFirstSymbol(List<SyntaxLine> syntaxLinesList, int i)
+        private static SyntaxLine ReplaceFirstSymbol(SyntaxLine currentSyntaxLine, IReadOnlyList<SyntaxLine> syntaxLinesBeforeCurrent)
         {
             Dictionary<Production, List<Production>> productionsToReplace = new Dictionary<Production, List<Production>>();
-            for (int j = 0; j < i; j++)
+            for (int i = 0; i < syntaxLinesBeforeCurrent.Count; i++)
             {
                 // 将每个形如Ai->AjY的产生式替换为产生式组Ai->X1Y|X2Y|...|XkY，
                 // 其中Aj->X1|X2|...|Xk是所有的Aj产生式
-                foreach (var production in syntaxLinesList[i].Productions)
+                foreach (var production in currentSyntaxLine.Productions)
                 {
-                    if (production.Symbols[0] == syntaxLinesList[j].Name)
+                    if (production.Symbols[0] == syntaxLinesBeforeCurrent[i].Name)
                     {
                         productionsToReplace.Add(production, new List<Production>());
-                        foreach (var production2 in syntaxLinesList[j].Productions)
+                        foreach (var production2 in syntaxLinesBeforeCurrent[i].Productions)
                         {
-                            Production newProduction = new Production(syntaxLinesList[i].Name);
-                            if (IsEmptyProduction(production2) && production.Symbols.Count >= 2)
-                            {
-
-                            }
-                            else
-                            {
-                                newProduction.Symbols.AddRange(production2.Symbols);
-                            }
-
+                            List<string> symbols = new List<string>();
+                            if (!IsEmptyProduction(production2) || production.Symbols.Count < 2)
+                                symbols.AddRange(production2.Symbols);
                             for (int k = 1; k < production.Symbols.Count; k++)
-                                newProduction.Symbols.Add(production.Symbols[k]);
+                                symbols.Add(production.Symbols[k]);
+                            Production newProduction = new Production(currentSyntaxLine.Name, symbols);
 
                             // 如果产生了完全相同的产生式，则跳过
                             bool haveSame = false;
@@ -321,7 +308,7 @@ namespace Compiler.Syntax
                                     break;
                                 }
                             }
-                            foreach (var temp in syntaxLinesList[i].Productions)
+                            foreach (var temp in currentSyntaxLine.Productions)
                             {
                                 if (Production.IsSameSymbolsList(temp, newProduction))
                                 {
@@ -335,26 +322,29 @@ namespace Compiler.Syntax
                     }
                 }
             }
+            List<Production> newProductions = new List<Production>(currentSyntaxLine.Productions);
             foreach (var toReplace in productionsToReplace)
             {
-                syntaxLinesList[i].Productions.Remove(toReplace.Key);
-                syntaxLinesList[i].Productions.AddRange(toReplace.Value);
+                newProductions.Remove(toReplace.Key);
+                newProductions.AddRange(toReplace.Value);
                 // 移除多余的空表达式
                 bool haveOneEmpty = false;
-                for (int j = 0; j < syntaxLinesList[i].Productions.Count; j++)
+                for (int i = 0; i < currentSyntaxLine.Productions.Count; i++)
                 {
-                    if (IsEmptyProduction(syntaxLinesList[i].Productions[j]))
+                    if (IsEmptyProduction(currentSyntaxLine.Productions[i]))
                     {
                         if (!haveOneEmpty)
                             haveOneEmpty = true;
                         else
                         {
-                            syntaxLinesList[i].Productions.RemoveAt(j);
-                            j--;
+                            newProductions.RemoveAt(i);
+                            i--;
                         }
                     }
                 }
             }
+            currentSyntaxLine.SetProductions(newProductions);
+            return currentSyntaxLine;
         }
 
         private static List<SyntaxLine> SortSyntaxLine(Dictionary<string, SyntaxLine> syntaxLinesDic)
@@ -429,44 +419,46 @@ namespace Compiler.Syntax
                     {
                         i--;
 
-                        SyntaxLine newSyntaxLine = new SyntaxLine();
-                        newSyntaxLine.Name = GetNewName(newSyntaxLines, syntaxLine.Name);
+                        string name = GetNewSyntaxLineName(newSyntaxLines, syntaxLine.Name);
                         // 获取需要移除的具有左公因子的表达式，并生成新文法的所有表达式
-                        List<Production> toRemoveProductions = new List<Production>();
-                        List<Production> newProductionsForNew = new List<Production>();
+                        List<Production> productionsToRemove = new List<Production>();
+                        List<Production> productionsForNew = new List<Production>();
                         foreach (var index in indexesHaveLeftCommonFactor)
                         {
                             var toRemove = syntaxLine.Productions[index];
-                            toRemoveProductions.Add(toRemove);
+                            productionsToRemove.Add(toRemove);
 
                             if (leftCommonFactor.Count == toRemove.Symbols.Count)
-                                newProductionsForNew.Add(new Production(newSyntaxLine.Name) { Symbols = new List<string>() { Helpers.EmptyOperator.ToString() } });
+                                productionsForNew.Add(new Production(name, new List<string>() { Helpers.EmptyOperator.ToString() }));
                             else
                             {
-                                Production newProduction = new Production(newSyntaxLine.Name);
+                                List<string> symbolsList = new List<string>();
                                 for (int j = leftCommonFactor.Count; j < toRemove.Symbols.Count; j++)
-                                    newProduction.Symbols.Add(toRemove.Symbols[j]);
-                                newProductionsForNew.Add(newProduction);
+                                    symbolsList.Add(toRemove.Symbols[j]);
+                                productionsForNew.Add(new Production(name, symbolsList));
                             }
                         }
-                        newSyntaxLine.Productions.AddRange(newProductionsForNew);
+                        SyntaxLine newSyntaxLine = new SyntaxLine(name, productionsForNew);
 
                         // 对旧的文法移除包含左公因子的表达式，并添加新替换的表达式
                         SyntaxLine withSameProductions = GetSyntaxLineWithSameProductions(newSyntaxLines, newSyntaxLine);
-                        Production newProductionForOld = new Production(syntaxLine.Name);
-                        newProductionForOld.Symbols.AddRange(leftCommonFactor);
+                        List<string> symbols = new List<string>();
+                        symbols.AddRange(leftCommonFactor);
                         if (withSameProductions == null)
                         {
-                            newProductionForOld.Symbols.Add(newSyntaxLine.Name);
+                            symbols.Add(name);
                             newSyntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
                         }
                         else
                         {
-                            newProductionForOld.Symbols.Add(withSameProductions.Name);
+                            symbols.Add(withSameProductions.Name);
                         }
-                        foreach (var toRemove in toRemoveProductions)
-                            syntaxLine.Productions.Remove(toRemove);
-                        syntaxLine.Productions.Add(newProductionForOld);
+                        Production newProductionForOld = new Production(syntaxLine.Name, symbols);
+                        List<Production> productionsForOld = new List<Production>(syntaxLine.Productions);
+                        foreach (var toRemove in productionsToRemove)
+                            productionsForOld.Remove(toRemove);
+                        productionsForOld.Add(newProductionForOld);
+                        syntaxLine.SetProductions(productionsForOld);
                     }
                 }
             }
@@ -477,24 +469,24 @@ namespace Compiler.Syntax
                 ExtractLeftCommonFactor(newSyntaxLines.Values);
         }
 
-        private SyntaxLine GetSyntaxLineWithSameProductions(Dictionary<string, SyntaxLine> newSyntaxLines, SyntaxLine newSyntaxLine)
+        private SyntaxLine GetSyntaxLineWithSameProductions(IReadOnlyDictionary<string, SyntaxLine> newSyntaxLines, SyntaxLine newSyntaxLine)
         {
             SyntaxLine withSameProductions = null;
-            foreach (var syntaxLine1111 in m_syntaxLines.Values)
+            foreach (var syntaxLine in m_syntaxLines.Values)
             {
-                if (SyntaxLine.IsSameProductions(syntaxLine1111, newSyntaxLine))
+                if (SyntaxLine.IsSameProductions(syntaxLine, newSyntaxLine))
                 {
-                    withSameProductions = syntaxLine1111;
+                    withSameProductions = syntaxLine;
                     break;
                 }
             }
             if (withSameProductions == null)
             {
-                foreach (var syntaxLine1111 in newSyntaxLines.Values)
+                foreach (var syntaxLine in newSyntaxLines.Values)
                 {
-                    if (SyntaxLine.IsSameProductions(syntaxLine1111, newSyntaxLine))
+                    if (SyntaxLine.IsSameProductions(syntaxLine, newSyntaxLine))
                     {
-                        withSameProductions = syntaxLine1111;
+                        withSameProductions = syntaxLine;
                         break;
                     }
                 }
@@ -536,7 +528,7 @@ namespace Compiler.Syntax
             }
         }
 
-        private bool IsPrefix(List<string> prefix, List<string> stringList)
+        private bool IsPrefix(IReadOnlyList<string> prefix, IReadOnlyList<string> stringList)
         {
             for (int i = 0; i < prefix.Count; i++)
             {
@@ -552,7 +544,7 @@ namespace Compiler.Syntax
             m_syntaxLines.Add(newSyntaxLine.Name, newSyntaxLine);
         }
 
-        private string GetNewName(Dictionary<string, SyntaxLine> newSyntaxLines, string name)
+        private string GetNewSyntaxLineName(IReadOnlyDictionary<string, SyntaxLine> newSyntaxLines, string name)
         {
             int count = 0;
             string newName = name;
@@ -719,6 +711,8 @@ namespace Compiler.Syntax
             // TODO
             return true;
         }
+        
+        #region 求预测分析表部分
 
         private Dictionary<string, Dictionary<string, List<Production>>> PredictiveAnalysisTable(Dictionary<string, HashSet<string>> firstSet, Dictionary<string, HashSet<string>> followSet)
         {
@@ -783,6 +777,8 @@ namespace Compiler.Syntax
                 return 0;
             });
         }
+
+        #endregion
 
         private void PrintSyntaxLines(string title)
         {

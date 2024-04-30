@@ -8,12 +8,12 @@ namespace Compiler.Syntax
         {
             // TODO 可以用正则表达式来判断syntaxLine的格式是否正确
 
-            SyntaxLine result = new SyntaxLine();
             var splited = syntaxLine.Split(':');
             if (splited.Length != 2)
                 return null;
 
-            result.Name = splited[0].Trim();
+            var name = splited[0].Trim();
+            List<Production> productions = new List<Production>();
             string[] productionStrings = splited[1].Split('|');
             foreach (var productionString in productionStrings)
             {
@@ -21,18 +21,19 @@ namespace Compiler.Syntax
                 if (string.IsNullOrEmpty(trimed))
                     continue;
 
-                string[] symbols = trimed.Split(' ');
-                Production production = new Production(result.Name);
-                foreach (var symbol in symbols)
+                string[] splitedSymbols = trimed.Split(' ');
+                List<string> symbols = new List<string>();
+                foreach (var symbol in splitedSymbols)
                 {
                     if (string.IsNullOrEmpty(symbol))
                         continue;
 
-                    production.Symbols.Add(symbol);
+                    symbols.Add(symbol);
                 }
-                if (production.Symbols.Count > 0)
-                    result.Productions.Add(production);
+                if (symbols.Count > 0)
+                    productions.Add(new Production(name, symbols));
             }
+            SyntaxLine result = new SyntaxLine(name, productions);
             return result;
         }
 

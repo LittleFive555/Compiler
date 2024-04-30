@@ -4,28 +4,21 @@ namespace Compiler.Syntax
 {
     public class SyntaxLine
     {
-        public string Name;
-        public List<Production> Productions = new List<Production>();
+        public string Name { get; }
 
-        public override string ToString()
+        private List<Production> m_productions = new List<Production>();
+        public IReadOnlyList<Production> Productions => m_productions;
+
+        public SyntaxLine(string name, IEnumerable<Production> productions)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(Name);
-            stringBuilder.Append("→");
+            Name = name;
+            SetProductions(productions);
+        }
 
-            for (int i = 0; i < Productions.Count; i++)
-            {
-                var production = Productions[i];
-                stringBuilder.Append(production);
-                if (i < Productions.Count - 1)
-                {
-                    stringBuilder.AppendLine();
-                    for (int j = 0; j < Name.Length; j++)
-                        stringBuilder.Append(' ');
-                    stringBuilder.Append('|');
-                }
-            }
-            return stringBuilder.ToString();
+        public void SetProductions(IEnumerable<Production> productions)
+        {
+            m_productions.Clear();
+            m_productions.AddRange(productions);
         }
 
         public static bool IsSameProductions(SyntaxLine syntaxLine1, SyntaxLine syntaxLine2)
@@ -48,17 +41,46 @@ namespace Compiler.Syntax
             }
             return true;
         }
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append(Name);
+            stringBuilder.Append("→");
+
+            for (int i = 0; i < Productions.Count; i++)
+            {
+                var production = Productions[i];
+                stringBuilder.Append(production);
+                if (i < Productions.Count - 1)
+                {
+                    stringBuilder.AppendLine();
+                    for (int j = 0; j < Name.Length; j++)
+                        stringBuilder.Append(' ');
+                    stringBuilder.Append('|');
+                }
+            }
+            return stringBuilder.ToString();
+        }
     }
 
     public class Production : IEquatable<Production?>
     {
-        public string Belonged;
+        public string Belonged { get; }
 
-        public List<string> Symbols = new List<string>();
+        private List<string> m_symbols = new List<string>();
+        public IReadOnlyList<string> Symbols => m_symbols;
 
-        public Production(string belonged)
+        public Production(string belonged, IEnumerable<string> symbols)
         {
             Belonged = belonged;
+            SetSymbolsList(symbols);
+        }
+
+        public void SetSymbolsList(IEnumerable<string> symbols)
+        {
+            m_symbols.Clear();
+            m_symbols.AddRange(symbols);
         }
 
         public override bool Equals(object? obj)
