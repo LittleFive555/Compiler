@@ -102,7 +102,7 @@ namespace Compiler.Lexical
                                 c = ReadChar(stream);
                                 forward = stream.Position;
                                 stringBuilder.Append(c);
-                            } while (((lastChar == '\\' && c == strStart) || c != strStart) && !c.Equals('\0'));
+                            } while (((lastChar == '\\' && c == strStart) || c != strStart) && c != '\0');
 
                             if (c == strStart)
                             {
@@ -163,7 +163,7 @@ namespace Compiler.Lexical
                         // TODO 尝试错误恢复
                     }
                 }
-                if (c.Equals('\0'))
+                if (c == '\0')
                     break;
             }
             return result;
@@ -175,7 +175,7 @@ namespace Compiler.Lexical
             {
                 foreach (var line in lines)
                 {
-                    if (line.Symbol.Equals(input))
+                    if (line.Symbol == input)
                     {
                         nextStateId = line.EndState;
                         return true;

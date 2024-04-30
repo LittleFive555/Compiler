@@ -59,7 +59,7 @@ namespace Compiler.Syntax
                         index++;
                     }
                 }
-                else if (currentSymbol.Equals(currentTokenName))
+                else if (currentSymbol == currentTokenName)
                 {
                     stack.Pop();
                     while (snapshotStack.Count > 0 && snapshotStack.Peek().CanRemove(stack))
@@ -221,7 +221,7 @@ namespace Compiler.Syntax
 
         private bool IsEmptyProduction(Production production)
         {
-            return production.Symbols.Count == 1 && production.Symbols[0].Equals(Helpers.EmptyOperator.ToString());
+            return production.Symbols.Count == 1 && production.Symbols[0] == Helpers.EmptyOperator.ToString();
         }
 
         #region 消除左递归部分
@@ -601,7 +601,7 @@ namespace Compiler.Syntax
             if (firstSet.ContainsKey(symbol))
                 return;
 
-            if (symbol.Equals(Helpers.EmptyOperator.ToString()))
+            if (symbol == Helpers.EmptyOperator.ToString())
                 return;
 
             if (IsTerminalSymbol(symbol)) // 如果是终结符号
@@ -642,8 +642,8 @@ namespace Compiler.Syntax
             // 如果是文法中左侧出现的符号，则是非终结符
             // 因为任何一个非终结符，都必须在文法左侧定义，而不能只出现在文法右侧
             return !m_syntaxLines.Keys.Contains(symbol)
-                && !symbol.Equals(Helpers.EmptyOperator.ToString())
-                && !symbol.Equals(EndSymbol);
+                && symbol != Helpers.EmptyOperator.ToString()
+                && symbol != EndSymbol;
         }
 
         #endregion
@@ -676,7 +676,7 @@ namespace Compiler.Syntax
                             for (int i = 0; i < production.Symbols.Count; i++)
                             {
                                 var currentSymbol = production.Symbols[i];
-                                if (currentSymbol.Equals(nonTerminalSymbol) && i + 1 < production.Symbols.Count)
+                                if (currentSymbol == nonTerminalSymbol && i + 1 < production.Symbols.Count)
                                 {
                                     var nextSymbol = production.Symbols[i + 1];
                                     var firstSetWithoutEmpty = new HashSet<string>(firstSet[nextSymbol]);
@@ -687,7 +687,7 @@ namespace Compiler.Syntax
                                         followSet[nonTerminalSymbol].UnionWith(firstSetWithoutEmpty);
                                     }
                                 }
-                                if ((currentSymbol.Equals(nonTerminalSymbol) && i + 1 == production.Symbols.Count)
+                                if ((currentSymbol == nonTerminalSymbol && i + 1 == production.Symbols.Count)
                                     || (i + 1 < production.Symbols.Count && firstSet[production.Symbols[i + 1]].Contains(Helpers.EmptyOperator.ToString())))
                                 {
                                     if (followSet.ContainsKey(syntaxLine.Name))
