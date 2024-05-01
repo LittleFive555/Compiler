@@ -231,10 +231,10 @@ WhileStatement: While LeftPar Value RightPar CodeBlock $
 
 
 // class定义(完善)
-ClassStatement: Class Identifier Colon Identifier ClassContent | 
-				Class String Colon Identifier ClassContent | 
-				Class Identifier ClassContent |
-				Class String ClassContent $
+ClassStatement: Class Identifier Colon Identifier {Block} ClassContent {Class} | 
+				Class String Colon Identifier {Block} ClassContent {Class} | 
+				Class Identifier {Block} ClassContent {Class} |
+				Class String {Block} ClassContent {Class} $
 
 ClassContent: LeftBrace ClassMultiFunctionDefine RightBrace | LeftBrace RightBrace $
 

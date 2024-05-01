@@ -19,6 +19,8 @@ namespace Compiler.Syntax
             if (!m_syntaxLines.ContainsKey(StartSymbol))
                 throw new Exception("没有文法开始符号 S ，请检查是否有产生式左侧命名为 S 的文法");
 
+            PrintSyntaxLines("Read");
+
             EliminateEmptyProduction();
 
             EliminateCircle();
@@ -162,6 +164,7 @@ namespace Compiler.Syntax
                 else if (currentSyntaxUnit.SyntaxUnitType == SyntaxUnitType.ParseAction)
                 {
                     (currentSyntaxUnit as ParseAction).Execute();
+                    stack.Pop();
                 }
                 currentSyntaxUnit = stack.Peek();
             }
@@ -706,6 +709,7 @@ namespace Compiler.Syntax
                                         nextSymbolName = production.SyntaxUnitList[i + offset];
                                         break;
                                     }
+                                    offset++;
                                 }
                                 if (syntaxUnit.Content == nonTerminalSymbol && nextSymbolName != null)
                                 {
