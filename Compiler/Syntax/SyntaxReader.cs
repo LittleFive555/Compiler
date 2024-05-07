@@ -37,7 +37,7 @@ namespace Compiler.Syntax
                         if (stringBuilder[stringBuilder.Length - 1] != '}')
                             throw new Exception();
 
-                        symbols.Add(new ParseActionPrint(stringBuilder.ToString()));
+                        symbols.Add(ParseActionFactory.CreateAction(stringBuilder.ToString()));
                         stringBuilder.Clear();
                     }
                     else if (char.IsWhiteSpace(c))

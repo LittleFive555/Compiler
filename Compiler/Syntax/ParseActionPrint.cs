@@ -8,7 +8,7 @@ namespace Compiler.Syntax
 
         public override void Execute()
         {
-            Console.WriteLine("Execute Print.");
+            Console.WriteLine("Execute Print." + Content);
         }
     }
 }
