@@ -308,6 +308,8 @@ namespace Compiler.Syntax
                             symbols.RemoveAt(j);
                             j--;
                         }
+                        else
+                            break;
                     }
                     if (symbols[0].Content == syntaxLinesBeforeCurrent[i].Name)
                     {
