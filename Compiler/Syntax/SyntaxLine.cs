@@ -2,7 +2,7 @@
 
 namespace Compiler.Syntax
 {
-    public class SyntaxLine
+    internal class SyntaxLine
     {
         public string Name { get; }
 
@@ -70,7 +70,7 @@ namespace Compiler.Syntax
         ParseAction,
     }
 
-    public class Production : IEquatable<Production?>
+    internal class Production : IEquatable<Production?>
     {
         private List<SyntaxUnit> m_syntaxUnitList = new List<SyntaxUnit>();
         public IReadOnlyList<SyntaxUnit> SyntaxUnitList => m_syntaxUnitList;

@@ -1,6 +1,6 @@
 namespace Compiler.Syntax
 {
-    public class SymbolName : SyntaxUnit
+    internal class SymbolName : SyntaxUnit
     {
         public SymbolName(string content) : base(content)
         {

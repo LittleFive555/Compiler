@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Compiler.Lexical;
+using Compiler.Syntax.Model;
 
 namespace Compiler.Syntax
 {
@@ -12,6 +13,12 @@ namespace Compiler.Syntax
         private const string EndSymbol = "$";
         private readonly SyntaxUnit StartSyntaxUnit = new SymbolName(StartSymbol);
         private readonly SyntaxUnit EndSyntaxUnit = new SymbolName(EndSymbol);
+
+        public SymbolTable SymbolTable = new SymbolTable();
+
+        private Stack<Scope> m_scopeStack = new Stack<Scope>();
+
+        public Scope? CurrentScope => m_scopeStack.Count > 0 ? m_scopeStack.Peek() : null;
 
         public SyntaxAnalyzer(Dictionary<string, SyntaxLine> syntaxLines)
         {
@@ -44,6 +51,8 @@ namespace Compiler.Syntax
 
             m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
             PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
+
+            PushScope(new Scope());
         }
 
         public Result Execute(List<Token> tokens)
@@ -163,7 +172,7 @@ namespace Compiler.Syntax
                 }
                 else if (currentSyntaxUnit.SyntaxUnitType == SyntaxUnitType.ParseAction)
                 {
-                    (currentSyntaxUnit as ParseAction).Execute();
+                    (currentSyntaxUnit as ParseAction).Execute(this, new ParserContext(currentToken));
                     stack.Pop();
                 }
                 currentSyntaxUnit = stack.Peek();
@@ -742,6 +751,20 @@ namespace Compiler.Syntax
             }
 
             return followSet;
+        }
+
+        #endregion
+
+        #region Parser相关部分
+
+        public void PushScope(Scope scope)
+        {
+            m_scopeStack.Push(scope);
+        }
+
+        public void PopScope()
+        {
+            m_scopeStack.Pop();
         }
 
         #endregion

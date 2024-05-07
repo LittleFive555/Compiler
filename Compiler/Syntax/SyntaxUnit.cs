@@ -1,6 +1,6 @@
 namespace Compiler.Syntax
 {
-    public abstract class SyntaxUnit : IEquatable<SyntaxUnit?>
+    internal abstract class SyntaxUnit : IEquatable<SyntaxUnit?>
     {
         internal SyntaxUnitType SyntaxUnitType;
 

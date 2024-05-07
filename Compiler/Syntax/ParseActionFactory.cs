@@ -1,12 +1,19 @@
 ﻿namespace Compiler.Syntax
 {
-    public class ParseActionFactory
+    internal class ParseActionFactory
     {
         public static ParseAction CreateAction(string content)
         {
-            content = content.Trim('{', '}');
+            var temp = content.Trim('{', '}');
             // TODO 分辨内容，创建对应的ParseAction
-            return new ParseActionPrint(content);
+            if (temp == "PushScope")
+                return new ParseActionPushScope(content);
+            else if (temp == "PopScope")
+                return new ParseActionPopScope(content);
+            else if (temp == "AddSymbol")
+                return new ParseActionAddSymbol(content);
+            else
+                throw new Exception();
         }
     }
 }

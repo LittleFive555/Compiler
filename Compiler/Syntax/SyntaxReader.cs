@@ -2,7 +2,7 @@
 
 namespace Compiler.Syntax
 {
-    public class SyntaxReader
+    internal class SyntaxReader
     {
         public static SyntaxLine? Read(string syntaxLine)
         {
