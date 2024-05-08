@@ -38,6 +38,16 @@ namespace Compiler.Syntax
             return;
         }
 
+        public IReadOnlyList<SymbolReference> GetSymbolReferences(Token token)
+        {
+            foreach (var symbolsByScope in  m_symbols.Values)
+            {
+                if (symbolsByScope.Any((symbol) => symbol.IsOneOfReference(token)))
+                    return symbolsByScope.Single((symbol) => symbol.IsOneOfReference(token)).GetReferences();
+            }
+            return null;
+        }
+
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();

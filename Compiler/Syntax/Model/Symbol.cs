@@ -57,6 +57,14 @@ namespace Compiler.Syntax.Model
             return result;
         }
 
+        public bool IsOneOfReference(Token token)
+        {
+            if (!m_references.ContainsKey(token.Document))
+                return false;
+
+            return m_references[token.Document].Contains(new SymbolReference(token, ReferenceType.Usage));
+        }
+
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();
