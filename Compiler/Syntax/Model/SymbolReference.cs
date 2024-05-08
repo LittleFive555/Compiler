@@ -14,6 +14,11 @@ namespace Compiler.Syntax.Model
             ReferenceType = referenceType;
         }
 
+        public override string ToString()
+        {
+            return string.Format("{0}:({1},{2})", Token.Document.AbsolutePath, Token.Line, Token.StartColumn);
+        }
+
         public override bool Equals(object? obj)
         {
             return Equals(obj as SymbolReference);

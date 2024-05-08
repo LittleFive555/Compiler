@@ -1,5 +1,6 @@
 ﻿using Compiler.Lexical;
 using Compiler.Syntax.Model;
+using System.Text;
 
 namespace Compiler.Syntax
 {
@@ -35,6 +36,20 @@ namespace Compiler.Syntax
             if (!existSymbol.HaveReferences())
                 m_symbols[belongedScope].Remove(existSymbol);
             return;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (var symbolSet in  m_symbols.Values)
+            {
+                foreach (var symbol in symbolSet)
+                {
+                    stringBuilder.Append(symbol.ToString());
+                    stringBuilder.AppendLine();
+                }
+            }
+            return stringBuilder.ToString();
         }
     }
 }

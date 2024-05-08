@@ -1,4 +1,5 @@
 ﻿using Compiler.Lexical;
+using System.Text;
 
 namespace Compiler.Syntax.Model
 {
@@ -54,6 +55,24 @@ namespace Compiler.Syntax.Model
             foreach (var reference in m_references.Values)
                 result.AddRange(reference);
             return result;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("Name:");
+            stringBuilder.Append(Name);
+            stringBuilder.Append(", ");
+            stringBuilder.Append("BelongedScope:");
+            stringBuilder.Append(BelongedScope);
+            stringBuilder.Append(", ");
+            stringBuilder.Append("References:");
+            foreach (var fileReferences in m_references.Values)
+            {
+                foreach (var symbolReference in fileReferences)
+                    stringBuilder.AppendLine(symbolReference.ToString());
+            }
+            return stringBuilder.ToString();
         }
     }
 }

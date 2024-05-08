@@ -180,6 +180,10 @@ namespace Compiler.Syntax
                 }
                 currentSyntaxUnit = stack.Peek();
             }
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine("Symbol Table:");
+            MyLogger.WriteLine(SymbolTable.ToString());
             return result;
         }
 
