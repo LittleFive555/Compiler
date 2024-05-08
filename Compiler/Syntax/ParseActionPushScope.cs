@@ -1,4 +1,6 @@
-﻿namespace Compiler.Syntax
+﻿using Compiler.Syntax.Model;
+
+namespace Compiler.Syntax
 {
     internal class ParseActionPushScope : ParseAction
     {
@@ -10,12 +12,17 @@
         {
             if (parser.CurrentScope == null) // 全局
             {
-                parser.PushScope(new Model.Scope());
+                parser.PushScope(new Scope());
             }
             else
             {
-                parser.PushScope(new Model.Scope(parserContext.CurrentToken.Line, parserContext.CurrentToken.StartColumn, parser.CurrentScope));
+                parser.PushScope(new Scope(parserContext.CurrentToken.Line, parserContext.CurrentToken.StartColumn, parser.CurrentScope));
             }
+        }
+
+        public override void RevertExecute(SyntaxAnalyzer parser, ParserContext parserContext)
+        {
+            parser.PopScope();
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Compiler.Syntax
         private readonly SyntaxUnit StartSyntaxUnit = new SymbolName(StartSymbol);
         private readonly SyntaxUnit EndSyntaxUnit = new SymbolName(EndSymbol);
 
-        public SymbolTable SymbolTable = new SymbolTable();
+        public SymbolTable SymbolTable { get; } = new SymbolTable();
 
         private Stack<Scope> m_scopeStack = new Stack<Scope>();
 
@@ -762,9 +762,9 @@ namespace Compiler.Syntax
             m_scopeStack.Push(scope);
         }
 
-        public void PopScope()
+        public Scope PopScope()
         {
-            m_scopeStack.Pop();
+            return m_scopeStack.Pop();
         }
 
         #endregion

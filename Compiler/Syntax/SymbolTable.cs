@@ -12,5 +12,11 @@ namespace Compiler.Syntax
                 m_symbols.Add(symbol.BelongedScope, new HashSet<Symbol>());
             m_symbols[symbol.BelongedScope].Add(symbol);
         }
+
+        public void RemoveSymbol(Symbol symbol)
+        {
+            if (m_symbols.ContainsKey(symbol.BelongedScope))
+                m_symbols[symbol.BelongedScope].Remove(symbol);
+        }
     }
 }
