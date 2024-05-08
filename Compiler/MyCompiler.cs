@@ -41,7 +41,7 @@ namespace Compiler
             AnalyzeResult analyzeResult = new AnalyzeResult();
             var lexicalResult = m_lexicalAnalyzer.Read(documentUri, stream);
             PrintTokens(lexicalResult);
-
+            analyzeResult.TokenList = new List<Token>(lexicalResult.Tokens);
             analyzeResult.CompileErrors.AddRange(lexicalResult.Errors);
 
             if (lexicalResult.Errors.Count > 0)
@@ -49,8 +49,12 @@ namespace Compiler
 
             var syntaxResult = m_syntaxAnalyzer.Execute(documentUri, lexicalResult.Tokens);
             analyzeResult.CompileErrors.AddRange(syntaxResult.Errors);
-
             return analyzeResult;
+        }
+
+        public SymbolTable GetSymbolTable()
+        {
+            return m_syntaxAnalyzer.SymbolTable;
         }
 
         private static void PrintTokens(LexicalAnalyzer.Result lexicalResult)
@@ -66,5 +70,7 @@ namespace Compiler
     public class AnalyzeResult
     {
         public List<CompileError> CompileErrors = new List<CompileError>();
+
+        public List<Token> TokenList;
     }
 }
