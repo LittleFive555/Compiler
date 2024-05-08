@@ -10,8 +10,10 @@
                 return new ParseActionPushScope(content);
             else if (temp == "PopScope")
                 return new ParseActionPopScope(content);
-            else if (temp == "AddSymbol")
-                return new ParseActionAddSymbol(content);
+            else if (temp == "AddSymbolUsage")
+                return new ParseActionAddSymbolUsage(content);
+            else if (temp == "AddSymbolDefinition")
+                return new ParseActionAddSymbolDefinition(content);
             else
                 throw new Exception();
         }

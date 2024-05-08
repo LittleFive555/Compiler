@@ -18,7 +18,7 @@ namespace Compiler.Syntax
 
         private Stack<Scope> m_scopeStack = new Stack<Scope>();
 
-        public Scope? CurrentScope => m_scopeStack.Count > 0 ? m_scopeStack.Peek() : null;
+        public Scope CurrentScope => m_scopeStack.Peek();
 
         public SyntaxAnalyzer(Dictionary<string, SyntaxLine> syntaxLines)
         {
@@ -55,7 +55,7 @@ namespace Compiler.Syntax
             PushScope(new Scope());
         }
 
-        public Result Execute(List<Token> tokens)
+        public Result Execute(Uri documentUri, List<Token> tokens)
         {
             Result result = new Result();
 
@@ -174,7 +174,7 @@ namespace Compiler.Syntax
                 else if (currentSyntaxUnit.SyntaxUnitType == SyntaxUnitType.ParseAction)
                 {
                     var parseAction = (currentSyntaxUnit as ParseAction);
-                    parseAction.Execute(this, new ParserContext(currentToken));
+                    parseAction.Execute(this, new ParserContext(documentUri, currentToken));
                     actionStack.Push(parseAction);
                     stack.Pop();
                 }

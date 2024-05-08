@@ -27,6 +27,10 @@ class Abs {
     }
 }
 
+class Abs2 : Abs {
+    
+}
+
 switch(abs) {
     case 123:
     case a.b:

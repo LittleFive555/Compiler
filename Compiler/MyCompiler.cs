@@ -28,13 +28,18 @@ namespace Compiler
 
         public AnalyzeResult Analyze(string filePath)
         {
-            return Analyze(File.OpenRead(filePath));
+            return Analyze(new Uri(filePath), File.OpenRead(filePath));
         }
 
-        public AnalyzeResult Analyze(Stream stream)
+        public AnalyzeResult Analyze(Uri fileUri)
+        {
+            return Analyze(fileUri, File.OpenRead(fileUri.AbsoluteUri));
+        }
+
+        public AnalyzeResult Analyze(Uri documentUri, Stream stream)
         {
             AnalyzeResult analyzeResult = new AnalyzeResult();
-            var lexicalResult = m_lexicalAnalyzer.Read(stream);
+            var lexicalResult = m_lexicalAnalyzer.Read(documentUri, stream);
             PrintTokens(lexicalResult);
 
             analyzeResult.CompileErrors.AddRange(lexicalResult.Errors);
@@ -42,7 +47,7 @@ namespace Compiler
             if (lexicalResult.Errors.Count > 0)
                 return analyzeResult;
 
-            var syntaxResult = m_syntaxAnalyzer.Execute(lexicalResult.Tokens);
+            var syntaxResult = m_syntaxAnalyzer.Execute(documentUri, lexicalResult.Tokens);
             analyzeResult.CompileErrors.AddRange(syntaxResult.Errors);
 
             return analyzeResult;

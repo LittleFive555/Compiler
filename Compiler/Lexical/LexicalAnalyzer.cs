@@ -13,7 +13,7 @@ namespace Compiler.Lexical
             m_dfa = NFA2DFA.Execute(m_nfa);
         }
 
-        public Result Read(Stream stream)
+        public Result Read(Uri document, Stream stream)
         {
             Result result = new Result();
 
@@ -50,6 +50,7 @@ namespace Compiler.Lexical
 
                         Token token = new Token(stringBuilder.ToString(),
                             new LexicalUnit(Helpers.SingleLineCommentName, LexicalType.Comment, 1000),
+                            document,
                             lineForward,
                             (int)(lexemeBegin - positionOnNewLine),
                             (int)(forward - lexemeBegin));
@@ -74,6 +75,7 @@ namespace Compiler.Lexical
 
                         Token token = new Token(stringBuilder.ToString(),
                             new LexicalUnit(Helpers.BlockCommentName, LexicalType.Comment, 1001),
+                            document,
                             lineForward,
                             (int)(lexemeBegin - positionOnNewLine),
                             (int)(forward - lexemeBegin));
@@ -141,6 +143,7 @@ namespace Compiler.Lexical
                         {
                             Token token = new Token(lastReceiveStr,
                                 lexicalUnit,
+                                document,
                                 lineForward,
                                 (int)(lexemeBegin - positionOnNewLine),
                                 (int)(lastReceivePos - lexemeBegin));
