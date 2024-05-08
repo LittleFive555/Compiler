@@ -12,7 +12,7 @@ StatementWithoutMacroIfStatement: ImportStatement |
 								  VarAssignStatement |
 								  AssignStatement |
 								  SelfCalculate |
-								  CodeBlock |
+								  {PushScope} CodeBlock {PopScope} |
 								  FunctionDefine |
 								  FunctionDefineWithoutKeyWord |
 								  FunctionCall |
@@ -50,12 +50,12 @@ Object: ObjectFirst |
 		
 		CanAssignValue AssignSymbol Value $
 		
-ObjectFirst: Identifier |
+ObjectFirst: {AddSymbolUsage} Identifier |
 			FunctionDefine |
 			ClassStatement |
 			Region |
-			FunctionDefineParams Lambda CodeBlock | 
-			Async FunctionDefineParams Lambda CodeBlock | 
+			{PushScope} FunctionDefineParams Lambda CodeBlock {PopScope} | 
+			Async {PushScope} FunctionDefineParams Lambda CodeBlock {PopScope} | 
 			AsyncStatement |
 			
 			Null | 
@@ -63,7 +63,7 @@ ObjectFirst: Identifier |
 			Number | 
 			String | 
 			
-			New Identifier FunctionCallParams | 
+			New {AddSymbolUsage} Identifier FunctionCallParams | 
 			
 			ArrayObject | 
 			MapObject | 
@@ -126,7 +126,7 @@ VarAssignStatement: Var IdentifierList |
 					Var IdentifierList AssignSymbol ValueList |
 					Var LeftBrace IdentifierList RightBrace Assign Value $
 
-IdentifierList: Identifier Comma IdentifierList | Identifier $
+IdentifierList: {AddSymbolDefinition} Identifier Comma IdentifierList | {AddSymbolDefinition} Identifier $
 
 AssignStatement: CanAssignValueList AssignSymbol ValueList | GlobalVar CanAssignValueList AssignSymbol ValueList $
 
@@ -147,19 +147,19 @@ AssignSymbol: Assign | PlusAssign | MinusAssign | MultiplyAssign | DivideAssign 
 
 
 // 函数定义(完善) 无function关键词和无标识符的，只能是lambda表达式
-FunctionDefine: Function Identifier FunctionDefineParams CodeBlock | 
-				Function String FunctionDefineParams CodeBlock | 
-				Function FunctionDefineParams CodeBlock | 
-				Function CodeBlock $
-FunctionDefineWithoutKeyWord: Identifier FunctionDefineParams CodeBlock |
-							  String FunctionDefineParams CodeBlock |
-							  Identifier CodeBlock |
-							  String CodeBlock $
+FunctionDefine: Function {AddSymbolDefinition} Identifier FunctionDefineParams {PushScope} CodeBlock {PopScope} | 
+				Function String FunctionDefineParams {PushScope} CodeBlock {PopScope} | 
+				Function FunctionDefineParams {PushScope} CodeBlock {PopScope} | 
+				Function {PushScope} CodeBlock {PopScope} $
+FunctionDefineWithoutKeyWord: {AddSymbolDefinition} Identifier FunctionDefineParams {PushScope} CodeBlock {PopScope} |
+							  String FunctionDefineParams {PushScope} CodeBlock {PopScope} |
+							  {AddSymbolDefinition} Identifier {PushScope} CodeBlock {PopScope} |
+							  String {PushScope} CodeBlock {PopScope} $
 FunctionDefineParams: LeftPar ParamList RightPar | 
 					  LeftPar RightPar $
-ParamList: Identifier Comma ParamList |
-		   Identifier | 
-		   Params Identifier $
+ParamList: {AddSymbolDefinition} Identifier Comma ParamList |
+		   {AddSymbolDefinition} Identifier | 
+		   Params {AddSymbolDefinition} Identifier $
 
 
 
@@ -177,11 +177,11 @@ FunctionCall1: FunctionCallParams |
 			   PeriodMember FunctionCall1 | 
 			   IndexMember FunctionCall1 $
 
-PeriodMember: Period Identifier | 
-			  QuestionMarkDot Identifier $
+PeriodMember: Period {AddSymbolUsage} Identifier | 
+			  QuestionMarkDot {AddSymbolUsage} Identifier $
 			  
-PeriodFunction: Period Identifier FunctionCallParams | 
-				QuestionMarkDot Identifier FunctionCallParams $
+PeriodFunction: Period {AddSymbolUsage} Identifier FunctionCallParams | 
+				QuestionMarkDot {AddSymbolUsage} Identifier FunctionCallParams $
 
 IndexMember: LeftBracket Value RightBracket |
 			 QuestionMarkDot LeftBracket Value RightBracket $
@@ -193,25 +193,25 @@ Boolean : True | False $
 
 
 // if语句(完善)
-IfStatement : If LeftPar Value RightPar CodeBlock |
-			  If LeftPar Value RightPar CodeBlock Else CodeBlock |
-			  If LeftPar Value RightPar CodeBlock ElseIfPart |
-			  If LeftPar Value RightPar CodeBlock ElseIfPart Else CodeBlock $
+IfStatement : If LeftPar Value RightPar {PushScope} CodeBlock {PopScope} |
+			  If LeftPar Value RightPar {PushScope} CodeBlock {PopScope} Else {PushScope} CodeBlock {PopScope} |
+			  If LeftPar Value RightPar {PushScope} CodeBlock {PopScope} ElseIfPart |
+			  If LeftPar Value RightPar {PushScope} CodeBlock {PopScope} ElseIfPart Else {PushScope} CodeBlock {PopScope} $
 
-ElseIfPart : ElseIf LeftPar Value RightPar CodeBlock ElseIfPart | 
-			 ElseIf LeftPar Value RightPar CodeBlock $
+ElseIfPart : ElseIf LeftPar Value RightPar {PushScope} CodeBlock {PopScope} ElseIfPart | 
+			 ElseIf LeftPar Value RightPar {PushScope} CodeBlock {PopScope} $
 
 
 
 // for语句 (存在间接左递归，会无法判断两种for，可能需要去除间接左递归，或者引入回溯)
-ForStatement: For LeftPar ForPart $
+ForStatement: For {PushScope} LeftPar ForPart {PopScope} $
 
 ForPart: MultiStatement ForNormalPartTwo | 
 		 ForNormalPartTwo | 
-		 Var Identifier Assign Value Comma Value RightPar CodeBlock | 
-		 Identifier Assign Value Comma Value RightPar CodeBlock |
-		 Var Identifier Assign Value Comma Value Comma Value RightPar CodeBlock | 
-		 Identifier Assign Value Comma Value Comma Value RightPar CodeBlock $
+		 Var {AddSymbolDefinition} Identifier Assign Value Comma Value RightPar CodeBlock | 
+		 {AddSymbolUsage} Identifier Assign Value Comma Value RightPar CodeBlock |
+		 Var {AddSymbolDefinition} Identifier Assign Value Comma Value Comma Value RightPar CodeBlock | 
+		 {AddSymbolUsage} Identifier Assign Value Comma Value Comma Value RightPar CodeBlock $
 
 // for语句 for(;;)
 ForNormalPartTwo: Semicolon Value ForNormalPartThree | Semicolon ForNormalPartThree $
@@ -221,12 +221,13 @@ ForNormalPartThree: Semicolon MultiStatement RightPar CodeBlock | Semicolon Righ
 
 
 // foreach语句(完善)
-ForeachStatement: Foreach LeftPar Var Identifier In Value RightPar CodeBlock | Foreach LeftPar Identifier In Value RightPar CodeBlock $
+ForeachStatement: Foreach {PushScope} LeftPar Var {AddSymbolDefinition} Identifier In Value RightPar CodeBlock {PopScope} | 
+				  Foreach {PushScope} LeftPar {AddSymbolUsage} Identifier In Value RightPar CodeBlock {PopScope} $
 
 
 
 // while语句(完善)
-WhileStatement: While LeftPar Value RightPar CodeBlock $
+WhileStatement: While LeftPar Value RightPar {PushScope} CodeBlock {PopScope} $
 
 
 
@@ -241,8 +242,8 @@ ClassContent: LeftBrace ClassMultiFunctionDefine RightBrace | LeftBrace RightBra
 ClassMultiFunctionDefine: ClassFunctionDefine ClassMultiFunctionDefine | ClassFunctionDefine $
 
 ClassFunctionDefine: AsyncStatement | 
-					 Get Identifier FunctionDefineParams CodeBlock | 
-					 Get String FunctionDefineParams CodeBlock | 
+					 Get {AddSymbolDefinition} Identifier {PushScope} FunctionDefineParams CodeBlock {PopScope} | 
+					 Get String {PushScope} FunctionDefineParams CodeBlock {PopScope} | 
 					 FunctionDefine | 
 					 FunctionDefineWithoutKeyWord | 
 					 Semicolon $
@@ -265,7 +266,7 @@ ContinueStatement: Continue $
 
 
 // switch(完善)
-SwitchStatement: Switch LeftPar Value RightPar CodeBlock $
+SwitchStatement: Switch LeftPar Value RightPar {PushScope} CodeBlock {PopScope} $
 
 CaseStatement: Case Value Colon $
 
@@ -274,7 +275,7 @@ DefaultStatement: Default Colon $
 
 
 // 异常(完善)
-TryStatement: Try CodeBlock Catch LeftPar Identifier RightPar CodeBlock $
+TryStatement: Try {PushScope} CodeBlock {PopScope} Catch {PushScope} LeftPar {AddSymbolUsage} Identifier RightPar CodeBlock {PopScope} $
 
 ThrowStatement: Throw Value $
 
@@ -302,7 +303,7 @@ MapObject: LeftBrace MultiMapAssignStatements RightBrace | LeftBrace RightBrace 
 
 MapAssignObject : Assign Value | Colon Value $
 
-MultiMapAssignStatements: Identifier MapAssignStatement1 | 
+MultiMapAssignStatements: {AddSymbolDefinition} Identifier MapAssignStatement1 | 
 						  String MapAssignStatement1 | 
 						  Number MapAssignStatement2 | 
 						  Boolean MapAssignStatement2 | 
@@ -314,7 +315,7 @@ MultiMapAssignStatements: Identifier MapAssignStatement1 |
 						  · $
 
 MapAssignStatement1: MapAssignObject MultiMapAssignStatements | 
-					 FunctionDefineParams CodeBlock MultiMapAssignStatements | 
+					 {PushScope} FunctionDefineParams CodeBlock {PopScope} MultiMapAssignStatements | 
 					 Comma MultiMapAssignStatements | 
 					 Semicolon MultiMapAssignStatements $
 
