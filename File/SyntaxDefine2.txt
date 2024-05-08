@@ -341,11 +341,11 @@ MacroElseIfPart : MacroElif MacroDefineList MultiStatementWithoutMacroIfStatemen
 				  MacroElif MacroDefineList MacroElseIfPart | 
 				  MacroElif MacroDefineList $
 				  
-MacroDefineList : Identifier | 
-				  Not Identifier |
+MacroDefineList : {AddSymbolUsage} Identifier | 
+				  Not {AddSymbolUsage} Identifier |
 				  LeftPar MacroDefineList RightPar |
-				  Identifier And MacroDefineList | 
-				  Identifier Or MacroDefineList |
-				  Not Identifier And MacroDefineList | 
-				  Not Identifier Or MacroDefineList |
+				  {AddSymbolUsage} Identifier And MacroDefineList | 
+				  {AddSymbolUsage} Identifier Or MacroDefineList |
+				  Not {AddSymbolUsage} Identifier And MacroDefineList | 
+				  Not {AddSymbolUsage} Identifier Or MacroDefineList |
 				  LeftPar MacroDefineList RightPar MacroDefineList $
