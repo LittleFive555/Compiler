@@ -27,10 +27,10 @@ namespace Compiler.Syntax
             if (!m_symbols.ContainsKey(belongedScope))
                 return;
 
-            var existSymbol = m_symbols[belongedScope].Single((symbol) => symbol.BelongedScope == belongedScope && symbol.Name == token.Content);
-            if (existSymbol == null)
+            if (!m_symbols[belongedScope].Any((symbol) => symbol.BelongedScope == belongedScope && symbol.Name == token.Content))
                 return;
 
+            var existSymbol = m_symbols[belongedScope].Single((symbol) => symbol.BelongedScope == belongedScope && symbol.Name == token.Content);
             existSymbol.RemoveReference(token);
             if (!existSymbol.HaveReferences())
                 m_symbols[belongedScope].Remove(existSymbol);
