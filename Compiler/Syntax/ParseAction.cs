@@ -9,6 +9,6 @@ namespace Compiler.Syntax
 
         public abstract void Execute(SyntaxAnalyzer parser, ParserContext parserContext);
 
-        public abstract void RevertExecute(SyntaxAnalyzer parser, ParserContext parserContext);
+        public abstract void RevertExecute(SyntaxAnalyzer parser);
     }
 }

@@ -20,7 +20,7 @@ namespace Compiler.Syntax
             }
         }
 
-        public override void RevertExecute(SyntaxAnalyzer parser, ParserContext parserContext)
+        public override void RevertExecute(SyntaxAnalyzer parser)
         {
             parser.PopScope();
         }

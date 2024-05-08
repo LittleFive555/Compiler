@@ -15,7 +15,7 @@ namespace Compiler.Syntax
             parser.SymbolTable.AddSymbol(m_addedSymbol);
         }
 
-        public override void RevertExecute(SyntaxAnalyzer parser, ParserContext parserContext)
+        public override void RevertExecute(SyntaxAnalyzer parser)
         {
             parser.SymbolTable.RemoveSymbol(m_addedSymbol);
         }

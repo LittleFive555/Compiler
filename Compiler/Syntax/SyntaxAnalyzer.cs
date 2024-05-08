@@ -60,6 +60,7 @@ namespace Compiler.Syntax
             Result result = new Result();
 
             Stack<Snapshot> snapshotStack = new Stack<Snapshot>();
+            Stack<ParseAction> actionStack = new Stack<ParseAction>();
             Stack<SyntaxUnit> stack = new Stack<SyntaxUnit>();
             stack.Push(EndSyntaxUnit);
             stack.Push(StartSyntaxUnit);
@@ -84,7 +85,7 @@ namespace Compiler.Syntax
                 {
                     if (index < tokens.Count && currentSyntaxUnit == EndSyntaxUnit)
                     {
-                        if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                        if (TryRecall(tokens, snapshotStack, actionStack, out var tempStack, out var tempIndex))
                         {
                             stack = tempStack;
                             index = tempIndex;
@@ -105,7 +106,7 @@ namespace Compiler.Syntax
                     }
                     else if (IsTerminalSymbol(currentSyntaxUnit.Content))
                     {
-                        if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                        if (TryRecall(tokens, snapshotStack, actionStack, out var tempStack, out var tempIndex))
                         {
                             stack = tempStack;
                             index = tempIndex;
@@ -119,7 +120,7 @@ namespace Compiler.Syntax
                     }
                     else if (!m_predictiveAnylisisTable[currentSyntaxUnit.Content].ContainsKey(currentTokenName))
                     {
-                        if (TryRecall(tokens, snapshotStack, out var tempStack, out var tempIndex))
+                        if (TryRecall(tokens, snapshotStack, actionStack, out var tempStack, out var tempIndex))
                         {
                             stack = tempStack;
                             index = tempIndex;
@@ -146,14 +147,14 @@ namespace Compiler.Syntax
                                 production = syntaxProductions[0];
                             else // 两个产生式全非空，则准备回溯（或许可能会当有空产生式时也回溯？）
                             {
-                                var snapshot = new Snapshot(stack, index, 0);
+                                var snapshot = new Snapshot(stack, index, 0, actionStack.Count);
                                 snapshotStack.Push(snapshot);
                                 production = syntaxProductions[0];
                             }
                         }
                         else
                         {
-                            var snapshot = new Snapshot(stack, index, 0);
+                            var snapshot = new Snapshot(stack, index, 0, actionStack.Count);
                             snapshotStack.Push(snapshot);
                             production = syntaxProductions[0];
                         }
@@ -172,7 +173,9 @@ namespace Compiler.Syntax
                 }
                 else if (currentSyntaxUnit.SyntaxUnitType == SyntaxUnitType.ParseAction)
                 {
-                    (currentSyntaxUnit as ParseAction).Execute(this, new ParserContext(currentToken));
+                    var parseAction = (currentSyntaxUnit as ParseAction);
+                    parseAction.Execute(this, new ParserContext(currentToken));
+                    actionStack.Push(parseAction);
                     stack.Pop();
                 }
                 currentSyntaxUnit = stack.Peek();
@@ -180,7 +183,7 @@ namespace Compiler.Syntax
             return result;
         }
 
-        private bool TryRecall(List<Token> tokens, Stack<Snapshot> snapshotStack, out Stack<SyntaxUnit> stack, out int index)
+        private bool TryRecall(List<Token> tokens, Stack<Snapshot> snapshotStack, Stack<ParseAction> parseActionStack, out Stack<SyntaxUnit> stack, out int index)
         {
             while (snapshotStack.Count > 0)
             {
@@ -201,6 +204,11 @@ namespace Compiler.Syntax
                     {
                         stack = new Stack<SyntaxUnit>(snapshot.CloneStack.Reverse());
                         index = snapshot.TokenIndex;
+                        while (parseActionStack.Count != snapshot.ParseActionStackCount)
+                        {
+                            var action = parseActionStack.Pop();
+                            action.RevertExecute(this);
+                        }
 
                         stack.Pop();
                         for (int i = production.SyntaxUnitList.Count - 1; i >= 0; i--)
@@ -950,8 +958,9 @@ namespace Compiler.Syntax
             public Stack<SyntaxUnit> CloneStack;
             public int TokenIndex;
             public int ChosenProductionIndex;
+            public int ParseActionStackCount;
 
-            public Snapshot(Stack<SyntaxUnit> stack, int tokenIndex, int chosenProductionIndex)
+            public Snapshot(Stack<SyntaxUnit> stack, int tokenIndex, int chosenProductionIndex, int parseActionStackCount)
             {
                 CloneStack = new Stack<SyntaxUnit>(stack.Reverse());
                 var temp1 = CloneStack.Pop();
@@ -960,6 +969,7 @@ namespace Compiler.Syntax
                 CloneStack.Push(temp1);
                 TokenIndex = tokenIndex;
                 ChosenProductionIndex = chosenProductionIndex;
+                ParseActionStackCount = parseActionStackCount;
             }
 
             public bool CanRemove(Stack<SyntaxUnit> stack)

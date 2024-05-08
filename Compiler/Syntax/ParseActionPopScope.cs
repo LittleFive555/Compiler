@@ -15,7 +15,7 @@ namespace Compiler.Syntax
             m_poppedScope = parser.PopScope();
         }
 
-        public override void RevertExecute(SyntaxAnalyzer parser, ParserContext parserContext)
+        public override void RevertExecute(SyntaxAnalyzer parser)
         {
             parser.PushScope(m_poppedScope);
         }
