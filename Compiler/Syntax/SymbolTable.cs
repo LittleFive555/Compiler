@@ -8,7 +8,7 @@ namespace Compiler.Syntax
     {
         private Dictionary<Scope, ISet<Symbol>> m_symbols = new Dictionary<Scope, ISet<Symbol>>();
 
-        public void AddSymbol(Token token, ReferenceType referenceType, Scope belongedScope)
+        public void AddSymbolReference(Token token, ReferenceType referenceType, Scope belongedScope)
         {
             if (!m_symbols.ContainsKey(belongedScope))
                 m_symbols.Add(belongedScope, new HashSet<Symbol>());
@@ -23,7 +23,7 @@ namespace Compiler.Syntax
             }
         }
 
-        public void RemoveSymbol(Token token, Scope belongedScope)
+        public void RemoveSymbolReference(Token token, Scope belongedScope)
         {
             if (!m_symbols.ContainsKey(belongedScope))
                 return;
