@@ -17,11 +17,13 @@ namespace Compiler.Syntax
             m_addedToken = parserContext.CurrentToken;
             m_scope = parser.CurrentScope;
             parser.SymbolTable.AddSymbolReference(parserContext.CurrentToken, ReferenceType.Usage, parser.CurrentScope);
+            parser.SymbolTable.PushSymbolToken(parserContext.CurrentToken);
         }
 
         public override void RevertExecute(SyntaxAnalyzer parser)
         {
             parser.SymbolTable.RemoveSymbolReference(m_addedToken, m_scope);
+            parser.SymbolTable.PopSymbolToken();
         }
     }
 }

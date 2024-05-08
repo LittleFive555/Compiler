@@ -232,10 +232,10 @@ WhileStatement: While LeftPar Value RightPar {PushScope} CodeBlock {PopScope} $
 
 
 // class定义(完善)
-ClassStatement: Class {AddSymbolDefinition} Identifier Colon {AddSymbolUsage} Identifier {PushScope} ClassContent {PopScope} | 
-				Class {AddSymbolDefinition} String Colon {AddSymbolUsage} Identifier {PushScope} ClassContent {PopScope} | 
-				Class {AddSymbolDefinition} Identifier {PushScope} ClassContent {PopScope} |
-				Class {AddSymbolDefinition} String {PushScope} ClassContent {PopScope} $
+ClassStatement: Class {AddSymbolDefinition} Identifier Colon {AddSymbolUsage} Identifier {PushScope(2)} ClassContent {PopScope} | 
+				Class {AddSymbolDefinition} String Colon {AddSymbolUsage} Identifier {PushScope(2)} ClassContent {PopScope} | 
+				Class {AddSymbolDefinition} Identifier {PushScope(1)} ClassContent {PopScope} |
+				Class {AddSymbolDefinition} String {PushScope(1)} ClassContent {PopScope} $
 
 ClassContent: LeftBrace ClassMultiFunctionDefine RightBrace | LeftBrace RightBrace $
 

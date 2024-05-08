@@ -28,7 +28,9 @@ class Abs {
 }
 
 class Abs2 : Abs {
-    
+    ptsd() {
+        
+    }
 }
 
 switch(abs) {

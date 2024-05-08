@@ -173,7 +173,7 @@ namespace Compiler.Syntax
                 }
                 else if (currentSyntaxUnit.SyntaxUnitType == SyntaxUnitType.ParseAction)
                 {
-                    var parseAction = (currentSyntaxUnit as ParseAction);
+                    var parseAction = currentSyntaxUnit as ParseAction;
                     parseAction.Execute(this, new ParserContext(documentUri, currentToken));
                     actionStack.Push(parseAction);
                     stack.Pop();

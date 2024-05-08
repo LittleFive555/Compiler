@@ -8,6 +8,9 @@ namespace Compiler.Syntax
     {
         private Dictionary<Scope, ISet<Symbol>> m_symbols = new Dictionary<Scope, ISet<Symbol>>();
 
+        private List<Token> m_lastSymbolTokenStack = new List<Token>();
+        private int m_maxCount = 50;
+
         public void AddSymbolReference(Token token, ReferenceType referenceType, Scope belongedScope)
         {
             if (!m_symbols.ContainsKey(belongedScope))
@@ -38,7 +41,7 @@ namespace Compiler.Syntax
             return;
         }
 
-        public IReadOnlyList<SymbolReference> GetSymbolReferences(Token token)
+        public IReadOnlyList<SymbolReference>? GetSymbolReferences(Token token)
         {
             foreach (var symbolsByScope in  m_symbols.Values)
             {
@@ -46,6 +49,39 @@ namespace Compiler.Syntax
                     return symbolsByScope.Single((symbol) => symbol.IsOneOfReference(token)).GetReferences();
             }
             return null;
+        }
+
+        public Symbol? GetSymbol(Token token)
+        {
+            foreach (var symbolsByScope in m_symbols.Values)
+            {
+                if (symbolsByScope.Any((symbol) => symbol.IsOneOfReference(token)))
+                    return symbolsByScope.Single((symbol) => symbol.IsOneOfReference(token));
+            }
+            return null;
+        }
+
+        public Token PeekLastSymbolToken(int count)
+        {
+            if (count > m_lastSymbolTokenStack.Count)
+                throw new IndexOutOfRangeException();
+
+            return m_lastSymbolTokenStack[m_lastSymbolTokenStack.Count - count];
+        }
+
+        public void PushSymbolToken(Token token)
+        {
+            m_lastSymbolTokenStack.Add(token);
+            if (m_lastSymbolTokenStack.Count > m_maxCount * 2)
+                m_lastSymbolTokenStack.RemoveAt(0);
+        }
+
+        public void PopSymbolToken()
+        {
+            if (m_lastSymbolTokenStack.Count == 0)
+                return;
+
+            m_lastSymbolTokenStack.RemoveAt(m_lastSymbolTokenStack.Count - 1);
         }
 
         public override string ToString()
