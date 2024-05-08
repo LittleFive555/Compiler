@@ -8,6 +8,8 @@ namespace Compiler.Syntax.Model
 
         public Scope? ParentScope { get; }
 
+        public int Level { get; }
+
         private int m_scopeAbility;
 
         public Scope(Symbol symbol, params ScopeAbility[] scopeAbilities) : this(scopeAbilities)
@@ -20,6 +22,8 @@ namespace Compiler.Syntax.Model
             Identifier = stringBuilder.ToString();
 
             ParentScope = parentScope;
+
+            Level = parentScope.Level + 1;
         }
 
         public Scope(int startLine, int startColumn, Scope parentScope, params ScopeAbility[] scopeAbilities) : this(scopeAbilities)
@@ -31,6 +35,8 @@ namespace Compiler.Syntax.Model
             Identifier = stringBuilder.ToString();
 
             ParentScope = parentScope;
+
+            Level = parentScope.Level + 1;
         }
 
         public Scope(params ScopeAbility[] scopeAbilities)
@@ -42,6 +48,8 @@ namespace Compiler.Syntax.Model
             m_scopeAbility = (int)ScopeAbility.None;
             foreach (var ability in scopeAbilities)
                 m_scopeAbility |= (int)ability;
+
+            Level = 0;
         }
 
         public bool HaveAbility(ScopeAbility scopeAbility)
@@ -56,12 +64,12 @@ namespace Compiler.Syntax.Model
 
         public bool IsParentOf(Scope scope)
         {
-            return scope.Identifier.StartsWith(Identifier);
+            return scope.Identifier.StartsWith(Identifier) && scope.Identifier != Identifier;
         }
 
         public bool IsChildOf(Scope scope)
         {
-            return Identifier.StartsWith(scope.Identifier);
+            return Identifier.StartsWith(scope.Identifier) && scope.Identifier != Identifier;
         }
 
         public override string ToString()
