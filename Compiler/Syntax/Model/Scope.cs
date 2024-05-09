@@ -22,7 +22,7 @@ namespace Compiler.Syntax.Model
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append(parentScope.Identifier);
-            stringBuilder.Append(", ");
+            stringBuilder.Append("--");
             stringBuilder.Append(token.Content);
             Identifier = stringBuilder.ToString();
 
@@ -32,11 +32,12 @@ namespace Compiler.Syntax.Model
             Level = parentScope.Level + 1;
         }
 
-        public Scope(int startLine, int startColumn, Scope parentScope, params ScopeAbility[] scopeAbilities) : this(scopeAbilities)
+        public Scope(Uri uri,int startLine, int startColumn, Scope parentScope, params ScopeAbility[] scopeAbilities) : this(scopeAbilities)
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append(parentScope.Identifier);
-            stringBuilder.Append(", ");
+            stringBuilder.Append("--");
+            stringBuilder.Append(uri.AbsolutePath);
             stringBuilder.Append(string.Format("({0},{1})", startLine, startColumn));
             Identifier = stringBuilder.ToString();
 

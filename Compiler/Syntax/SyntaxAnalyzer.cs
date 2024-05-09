@@ -177,7 +177,6 @@ namespace Compiler.Syntax
             }
             CurrentFile.GenerateSymbolTable();
             result.SymbolTable = CurrentFile.GetSymbolTable();
-            PrintSymbolTable(result.SymbolTable);
             return result;
         }
 

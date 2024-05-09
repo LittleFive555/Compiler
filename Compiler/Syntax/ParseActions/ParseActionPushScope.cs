@@ -19,7 +19,7 @@ namespace Compiler.Syntax.ParseActions
             }
             else
             {
-                parser.CurrentFile.PushScope(new Scope(parserContext.CurrentToken.Line, parserContext.CurrentToken.StartColumn, parser.CurrentFile.CurrentScope));
+                parser.CurrentFile.PushScope(new Scope(parserContext.FileData.DocumentUri, parserContext.CurrentToken.Line, parserContext.CurrentToken.StartColumn, parser.CurrentFile.CurrentScope));
             }
         }
 

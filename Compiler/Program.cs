@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Compiler.Syntax;
 
 namespace Compiler
 {
@@ -15,10 +16,15 @@ namespace Compiler
                 "E:\\SourceCode\\Compiler\\File\\Symbols.txt",
                 "E:\\SourceCode\\Compiler\\File\\ReservedWord.txt",
                 "E:\\SourceCode\\Compiler\\File\\LexerDefine.txt",
-                "E:\\SourceCode\\Compiler\\File\\SyntaxDefine1.txt");
-            var result = myCompiler.Analyze("E:\\Dragonscapes\\Client\\Assets\\ScriptScorpio\\Game\\UI\\UIDragonMerchant\\UIDragonMerchantStore.sco");
-            foreach (var error in result.CompileErrors)
+                "E:\\SourceCode\\Compiler\\File\\SyntaxDefine2.txt");
+            var result1 = myCompiler.Analyze("E:\\SourceCode\\Compiler\\ScorpioScript\\Test1.sco");
+            foreach (var error in result1.CompileErrors)
                 MyLogger.WriteLine(error);
+            var result2 = myCompiler.Analyze("E:\\SourceCode\\Compiler\\ScorpioScript\\Test2.sco");
+            foreach (var error in result2.CompileErrors)
+                MyLogger.WriteLine(error);
+            SymbolTable symbolTable = SymbolTable.Merge(result1.FileData.SymbolTable, result2.FileData.SymbolTable);
+            MyLogger.WriteLine(symbolTable);
         }
     }
 }

@@ -21,7 +21,7 @@ namespace Compiler.Syntax.Model
             BelongedScope = belongedScope;
         }
 
-        public void AddReferences(HashSet<SymbolReference> symbolReferences)
+        public void AddReferences(IReadOnlySet<SymbolReference> symbolReferences)
         {
             m_references.UnionWith(symbolReferences);
         }

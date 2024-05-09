@@ -15,20 +15,26 @@ namespace Compiler.Syntax
             m_rootScope = rootScope;
         }
 
-        public void CollectSymbols()
+        public static SymbolTable Merge(params SymbolTable[] symbolTables)
         {
-            var referencesByScope = CollectReferencesByScope(m_rootScope);
-            
-            foreach (var allReferences in referencesByScope)
+            SymbolTable result = new SymbolTable(new Scope());
+            foreach (var symbolTable in symbolTables)
             {
-                m_symbols.Add(allReferences.Key, new Dictionary<Scope, Symbol>());
-                foreach (var symbolReferences in allReferences.Value)
+                foreach (var keyValue in symbolTable.m_symbols)
                 {
-                    Symbol symbol = new Symbol(allReferences.Key, symbolReferences.Key);
-                    symbol.AddReferences(symbolReferences.Value);
-                    m_symbols[allReferences.Key].Add(symbolReferences.Key, symbol);
+                    if (!result.m_symbols.ContainsKey(keyValue.Key))
+                        result.m_symbols.Add(keyValue.Key, new Dictionary<Scope, Symbol>());
+
+                    var symbolDic = result.m_symbols[keyValue.Key];
+                    foreach (var symbol in keyValue.Value)
+                    {
+                        if (!symbolDic.ContainsKey(symbol.Key))
+                            symbolDic.Add(symbol.Key, new Symbol(symbol.Value.Name, symbol.Value.BelongedScope));
+                        symbolDic[symbol.Key].AddReferences(symbol.Value.GetReferences());
+                    }
                 }
             }
+            return result;
         }
 
         public IReadOnlySet<SymbolReference>? GetSymbolReferences(Token token)
@@ -48,6 +54,22 @@ namespace Compiler.Syntax
                     return symbol;
             }
             return null;
+        }
+
+        internal void CollectSymbols()
+        {
+            var referencesByScope = CollectReferencesByScope(m_rootScope);
+
+            foreach (var allReferences in referencesByScope)
+            {
+                m_symbols.Add(allReferences.Key, new Dictionary<Scope, Symbol>());
+                foreach (var symbolReferences in allReferences.Value)
+                {
+                    Symbol symbol = new Symbol(allReferences.Key, symbolReferences.Key);
+                    symbol.AddReferences(symbolReferences.Value);
+                    m_symbols[allReferences.Key].Add(symbolReferences.Key, symbol);
+                }
+            }
         }
 
         private Dictionary<string, Dictionary<Scope, HashSet<SymbolReference>>> CollectReferencesByScope(Scope scopePointer)
