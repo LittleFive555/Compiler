@@ -25,6 +25,8 @@ namespace Compiler
                 MyLogger.WriteLine(error);
             SymbolTable symbolTable = SymbolTable.Merge(result1.FileData.SymbolTable, result2.FileData.SymbolTable);
             MyLogger.WriteLine(symbolTable);
+            symbolTable.Remove(result2.FileData.SymbolTable);
+            MyLogger.WriteLine(symbolTable);
         }
     }
 }

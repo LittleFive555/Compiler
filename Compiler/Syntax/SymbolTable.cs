@@ -37,6 +37,35 @@ namespace Compiler.Syntax
             return result;
         }
 
+        public void Remove(SymbolTable toRemove)
+        {
+            List<string> emptyStrings = new List<string>();
+            foreach (var keyValue in toRemove.m_symbols)
+            {
+                if (!m_symbols.ContainsKey(keyValue.Key))
+                    continue;
+
+                var symbolDic = m_symbols[keyValue.Key];
+                List<Scope> emptyScopes = new List<Scope>();
+                foreach (var symbol in keyValue.Value)
+                {
+                    if (!symbolDic.ContainsKey(symbol.Key))
+                        continue;
+
+                    symbolDic[symbol.Key].RemoveReferences(symbol.Value.GetReferences());
+                    if (symbolDic[symbol.Key].GetReferences().Count == 0)
+                        emptyScopes.Add(symbol.Key);
+                }
+                foreach (var emptyScope in emptyScopes)
+                    symbolDic.Remove(emptyScope);
+
+                if (symbolDic.Count == 0)
+                    emptyStrings.Add(keyValue.Key);
+            }
+            foreach (var emptyString in emptyStrings)
+                m_symbols.Remove(emptyString);
+        }
+
         public IReadOnlySet<SymbolReference>? GetSymbolReferences(Token token)
         {
             var symbol = GetSymbol(token);

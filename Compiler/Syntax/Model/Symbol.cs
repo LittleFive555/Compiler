@@ -26,6 +26,11 @@ namespace Compiler.Syntax.Model
             m_references.UnionWith(symbolReferences);
         }
 
+        public void RemoveReferences(IReadOnlySet<SymbolReference> symbolReferences)
+        {
+            m_references.ExceptWith(symbolReferences);
+        }
+
         public IReadOnlySet<SymbolReference> GetReferences()
         {
             return m_references;
