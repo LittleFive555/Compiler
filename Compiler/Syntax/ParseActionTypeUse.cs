@@ -3,12 +3,14 @@ using Compiler.Syntax.Model;
 
 namespace Compiler.Syntax
 {
-    internal class ParseActionAddSymbolDefinition : ParseAction
+    internal class ParseActionTypeUse : ParseAction
     {
+        public override string FunctionName => "TypeUse";
+
         private Token m_addedToken;
         private Scope m_scope;
 
-        public ParseActionAddSymbolDefinition(string content) : base(content)
+        public ParseActionTypeUse(string content) : base(content)
         {
         }
 
@@ -16,7 +18,7 @@ namespace Compiler.Syntax
         {
             m_addedToken = parserContext.CurrentToken;
             m_scope = parser.CurrentScope;
-            parser.SymbolTable.AddSymbolReference(parserContext.CurrentToken, ReferenceType.Defination, parser.CurrentScope);
+            parser.SymbolTable.AddSymbolReference(parserContext.CurrentToken, ReferenceType.TypeUse, parser.CurrentScope);
             parser.SymbolTable.PushSymbolToken(parserContext.CurrentToken);
         }
 

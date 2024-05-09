@@ -2,7 +2,9 @@
 {
     public enum ReferenceType
     {
-        Defination,
-        Usage,
+        TypeDefine,
+        VariableDefine,
+        TypeUse,
+        VariableUse,
     }
 }

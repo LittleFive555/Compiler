@@ -4,6 +4,8 @@ namespace Compiler.Syntax
 {
     internal class ParseActionPopScope : ParseAction
     {
+        public override string FunctionName => "PopScope";
+
         private Scope m_poppedScope;
 
         public ParseActionPopScope(string content) : base(content)

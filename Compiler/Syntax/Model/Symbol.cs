@@ -39,7 +39,7 @@ namespace Compiler.Syntax.Model
         public void RemoveReference(Token token)
         {
             // XXX 这里随便传入一个ReferenceType，因为该变量不参与值比较
-            m_references[token.Document].Remove(new SymbolReference(token, ReferenceType.Defination));
+            m_references[token.Document].Remove(new SymbolReference(token, ReferenceType.VariableUse));
             if (m_references[token.Document].Count == 0)
                 m_references.Remove(token.Document);
         }
@@ -62,7 +62,8 @@ namespace Compiler.Syntax.Model
             if (!m_references.ContainsKey(token.Document))
                 return false;
 
-            return m_references[token.Document].Contains(new SymbolReference(token, ReferenceType.Usage));
+            // XXX 这里随便传入一个ReferenceType，因为该变量不参与值比较
+            return m_references[token.Document].Contains(new SymbolReference(token, ReferenceType.VariableUse));
         }
 
         public override string ToString()

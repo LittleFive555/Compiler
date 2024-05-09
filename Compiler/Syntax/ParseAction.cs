@@ -2,7 +2,10 @@ namespace Compiler.Syntax
 {
     internal abstract class ParseAction : SyntaxUnit
     {
+        public abstract string FunctionName { get; }
+
         protected List<string> m_arguments = new List<string>();
+
         public ParseAction(string content) : base(content)
         {
             SyntaxUnitType = SyntaxUnitType.ParseAction;
@@ -15,6 +18,9 @@ namespace Compiler.Syntax
 
         private void CollectArguments(string content)
         {
+            if (string.IsNullOrEmpty(content))
+                return;
+
             int leftParIndex = content.IndexOf('(');
             if (leftParIndex == -1)
                 return;

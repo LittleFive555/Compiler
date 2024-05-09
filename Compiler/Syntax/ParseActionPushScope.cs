@@ -4,6 +4,8 @@ namespace Compiler.Syntax
 {
     internal class ParseActionPushScope : ParseAction
     {
+        public override string FunctionName => "PushScope";
+
         public ParseActionPushScope(string content) : base(content)
         {
         }
