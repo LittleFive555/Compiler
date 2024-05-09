@@ -17,13 +17,13 @@ namespace Compiler.Syntax.ParseActions
         public override void Execute(SyntaxAnalyzer parser, ParserContext parserContext)
         {
             m_addedToken = parserContext.CurrentToken;
-            m_scope = parser.CurrentScope;
-            parser.PushSymbolReference(parserContext.CurrentToken, ReferenceType.TypeUse, parser.CurrentScope);
+            m_scope = parser.CurrentFile.CurrentScope;
+            parser.CurrentFile.PushSymbolReference(parserContext.CurrentToken, ReferenceType.TypeUse, parser.CurrentFile.CurrentScope);
         }
 
         public override void RevertExecute(SyntaxAnalyzer parser)
         {
-            parser.PopSymbolReference(m_addedToken, m_scope);
+            parser.CurrentFile.PopSymbolReference(m_addedToken, m_scope);
         }
     }
 }

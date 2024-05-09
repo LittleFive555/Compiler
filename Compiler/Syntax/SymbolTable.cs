@@ -1,6 +1,6 @@
-﻿using Compiler.Lexical;
+﻿using System.Text;
+using Compiler.Lexical;
 using Compiler.Syntax.Model;
-using System.Text;
 
 namespace Compiler.Syntax
 {
@@ -17,68 +17,21 @@ namespace Compiler.Syntax
 
         public void CollectSymbols()
         {
-            Dictionary<string, Dictionary<Scope, List<SymbolReference>>> referenceByScope = new Dictionary<string, Dictionary<Scope, List<SymbolReference>>>();
-            CollectSymbols(m_rootScope, referenceByScope);
+            var referencesByScope = CollectReferencesByScope(m_rootScope);
             
-            foreach (var reference in referenceByScope)
+            foreach (var allReferences in referencesByScope)
             {
-                m_symbols.Add(reference.Key, new Dictionary<Scope, Symbol>());
-                foreach (var symbol in reference.Value)
+                m_symbols.Add(allReferences.Key, new Dictionary<Scope, Symbol>());
+                foreach (var symbolReferences in allReferences.Value)
                 {
-                    Symbol ssss = new Symbol(reference.Key, symbol.Key);
-                    ssss.AddReferences(symbol.Value[0].Token.Document, new HashSet<SymbolReference>(symbol.Value));
-                    m_symbols[reference.Key].Add(symbol.Key, ssss);
+                    Symbol symbol = new Symbol(allReferences.Key, symbolReferences.Key);
+                    symbol.AddReferences(symbolReferences.Value);
+                    m_symbols[allReferences.Key].Add(symbolReferences.Key, symbol);
                 }
             }
         }
 
-        private void CollectSymbols(Scope scopePointer, Dictionary<string, Dictionary<Scope, List<SymbolReference>>> symbols)
-        {
-            foreach (var symbolReference in scopePointer.References)
-            {
-                string symbolName = symbolReference.Key;
-                if (!symbols.ContainsKey(symbolName))
-                    symbols.Add(symbolName, new Dictionary<Scope, List<SymbolReference>>());
-                Dictionary<Scope, List<SymbolReference>> symbolDic = symbols[symbolName];
-                foreach (var reference in symbolReference.Value)
-                {
-                    SetReferenceBelongedScope(scopePointer, symbolDic, reference);
-                }
-            }
-
-            foreach (var childScope in scopePointer.Children)
-            {
-                CollectSymbols(childScope, symbols);
-            }
-        }
-
-        private void SetReferenceBelongedScope(Scope currentScope, Dictionary<Scope, List<SymbolReference>> symbolDic, SymbolReference reference)
-        {
-            if (reference.ReferenceType == ReferenceType.TypeDefine || reference.ReferenceType == ReferenceType.VariableDefine)
-            {
-                if (symbolDic.ContainsKey(currentScope))
-                    symbolDic[currentScope].Add(reference);
-                else
-                    symbolDic.Add(currentScope, new List<SymbolReference>() { reference });
-            }
-            else
-            {
-                Scope? tempScope = currentScope;
-                while (tempScope != null)
-                {
-                    if (symbolDic.ContainsKey(tempScope))
-                        break;
-                    tempScope = tempScope.ParentScope;
-                }
-
-                if (tempScope == null)
-                    symbolDic.Add(m_rootScope, new List<SymbolReference>() { reference });
-                else
-                    symbolDic[tempScope].Add(reference);
-            }
-        }
-
-        public IReadOnlyList<SymbolReference>? GetSymbolReferences(Token token)
+        public IReadOnlySet<SymbolReference>? GetSymbolReferences(Token token)
         {
             var symbol = GetSymbol(token);
             return symbol?.GetReferences();
@@ -95,6 +48,54 @@ namespace Compiler.Syntax
                     return symbol;
             }
             return null;
+        }
+
+        private Dictionary<string, Dictionary<Scope, HashSet<SymbolReference>>> CollectReferencesByScope(Scope scopePointer)
+        {
+            Dictionary<string, Dictionary<Scope, HashSet<SymbolReference>>> referencesByScope = new Dictionary<string, Dictionary<Scope, HashSet<SymbolReference>>>();
+            CollectReferencesByScopeImpl(scopePointer, referencesByScope);
+            return referencesByScope;
+        }
+
+        private void CollectReferencesByScopeImpl(Scope scopePointer, Dictionary<string, Dictionary<Scope, HashSet<SymbolReference>>> referencesByScope)
+        {
+            foreach (var symbolReference in scopePointer.References)
+            {
+                string symbolName = symbolReference.Key;
+                if (!referencesByScope.ContainsKey(symbolName))
+                    referencesByScope.Add(symbolName, new Dictionary<Scope, HashSet<SymbolReference>>());
+                foreach (var reference in symbolReference.Value)
+                    SetReferenceToScope(reference, scopePointer, referencesByScope[symbolName]);
+            }
+
+            foreach (var childScope in scopePointer.Children)
+                CollectReferencesByScopeImpl(childScope, referencesByScope);
+        }
+
+        private void SetReferenceToScope(SymbolReference reference, Scope currentScope, Dictionary<Scope, HashSet<SymbolReference>> symbolDic)
+        {
+            if (reference.ReferenceType == ReferenceType.TypeDefine || reference.ReferenceType == ReferenceType.VariableDefine)
+            {
+                if (symbolDic.ContainsKey(currentScope))
+                    symbolDic[currentScope].Add(reference);
+                else
+                    symbolDic.Add(currentScope, new HashSet<SymbolReference>() { reference });
+            }
+            else
+            {
+                Scope? tempScope = currentScope;
+                while (tempScope != null)
+                {
+                    if (symbolDic.ContainsKey(tempScope))
+                        break;
+                    tempScope = tempScope.ParentScope;
+                }
+
+                if (tempScope == null)
+                    symbolDic.Add(m_rootScope, new HashSet<SymbolReference>() { reference });
+                else
+                    symbolDic[tempScope].Add(reference);
+            }
         }
 
         public override string ToString()

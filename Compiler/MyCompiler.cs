@@ -38,23 +38,28 @@ namespace Compiler
 
         public AnalyzeResult Analyze(Uri documentUri, Stream stream)
         {
+            FileData fileData = new FileData(documentUri);
             AnalyzeResult analyzeResult = new AnalyzeResult();
-            var lexicalResult = m_lexicalAnalyzer.Read(documentUri, stream);
+            var lexicalResult = m_lexicalAnalyzer.Read(fileData, stream);
             PrintTokens(lexicalResult);
-            analyzeResult.TokenList = new List<Token>(lexicalResult.Tokens);
+
+            fileData.SetTokenLine(lexicalResult.Tokens);
             analyzeResult.CompileErrors.AddRange(lexicalResult.Errors);
 
             if (lexicalResult.Errors.Count > 0)
                 return analyzeResult;
 
-            var syntaxResult = m_syntaxAnalyzer.Execute(documentUri, lexicalResult.Tokens);
+            var syntaxResult = m_syntaxAnalyzer.Execute(fileData, lexicalResult.Tokens);
+            fileData.SetSymbolTable(syntaxResult.SymbolTable);
             analyzeResult.CompileErrors.AddRange(syntaxResult.Errors);
+            analyzeResult.FileData = fileData;
             return analyzeResult;
         }
 
         public SymbolTable GetSymbolTable()
         {
-            return m_syntaxAnalyzer.SymbolTable;
+            // TODO 要把所有文件的符号表结合起来
+            return null;
         }
 
         private static void PrintTokens(LexicalAnalyzer.Result lexicalResult)
@@ -71,6 +76,6 @@ namespace Compiler
     {
         public List<CompileError> CompileErrors = new List<CompileError>();
 
-        public List<Token> TokenList;
+        public FileData FileData;
     }
 }

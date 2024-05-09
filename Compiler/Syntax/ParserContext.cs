@@ -4,13 +4,13 @@ namespace Compiler.Syntax
 {
     internal class ParserContext
     {
-        public Uri DocumentUri { get; }
+        public FileData FileData { get; }
 
         public Token CurrentToken { get; }
 
-        public ParserContext(Uri documentUri, Token currentToken)
+        public ParserContext(FileData fileData, Token currentToken)
         {
-            DocumentUri = documentUri;
+            FileData = fileData;
             CurrentToken = currentToken;
         }
     }

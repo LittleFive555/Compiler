@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Compiler.Lexical;
-using Compiler.Syntax.Model;
 using Compiler.Syntax.ParseActions;
 
 namespace Compiler.Syntax
@@ -15,12 +14,7 @@ namespace Compiler.Syntax
         private readonly SyntaxUnit StartSyntaxUnit = new SymbolName(StartSymbol);
         private readonly SyntaxUnit EndSyntaxUnit = new SymbolName(EndSymbol);
 
-        public SymbolTable SymbolTable { get; }
-
-        private Scope m_rootScope = new Scope();
-        private Stack<Scope> m_scopeStack = new Stack<Scope>();
-
-        public Scope CurrentScope => m_scopeStack.Peek();
+        public FileOnAnalyze CurrentFile { get; private set; }
 
         public SyntaxAnalyzer(Dictionary<string, SyntaxLine> syntaxLines)
         {
@@ -53,13 +47,11 @@ namespace Compiler.Syntax
 
             m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
             PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
-
-            SymbolTable = new SymbolTable(m_rootScope);
-            PushScope(m_rootScope);
         }
 
-        public Result Execute(Uri documentUri, List<Token> tokens)
+        public Result Execute(FileData fileData, List<Token> tokens)
         {
+            CurrentFile = new FileOnAnalyze(fileData);
             Result result = new Result();
 
             Stack<Snapshot> snapshotStack = new Stack<Snapshot>();
@@ -177,17 +169,15 @@ namespace Compiler.Syntax
                 else if (currentSyntaxUnit.SyntaxUnitType == SyntaxUnitType.ParseAction)
                 {
                     var parseAction = currentSyntaxUnit as ParseAction;
-                    parseAction.Execute(this, new ParserContext(documentUri, currentToken));
+                    parseAction.Execute(this, new ParserContext(fileData, currentToken));
                     actionStack.Push(parseAction);
                     stack.Pop();
                 }
                 currentSyntaxUnit = stack.Peek();
             }
-            SymbolTable.CollectSymbols();
-            MyLogger.WriteLine("");
-            MyLogger.WriteLine("");
-            MyLogger.WriteLine("Symbol Table:");
-            MyLogger.WriteLine(SymbolTable.ToString());
+            CurrentFile.GenerateSymbolTable();
+            result.SymbolTable = CurrentFile.GetSymbolTable();
+            PrintSymbolTable(result.SymbolTable);
             return result;
         }
 
@@ -771,63 +761,6 @@ namespace Compiler.Syntax
 
         #endregion
 
-        #region Parser相关部分
-
-        public void PushScope(Scope scope)
-        {
-            m_scopeStack.Push(scope);
-        }
-
-        /// <summary>
-        /// 用于分析正常过程中的作用域进出
-        /// </summary>
-        public Scope PopScope()
-        {
-            var lastScope = m_scopeStack.Pop();
-            return lastScope;
-        }
-
-        /// <summary>
-        /// 用于回溯
-        /// </summary>
-        public Scope RevertScope()
-        {
-            var lastScope = m_scopeStack.Pop();
-            if (lastScope.ParentScope != null)
-                lastScope.ParentScope.PopChild();
-            return lastScope;
-        }
-
-        private List<Token> m_lastSymbolTokenStack = new List<Token>();
-        private int m_maxCount = 50;
-
-        public void PushSymbolReference(Token token, ReferenceType referenceType, Scope currentScope)
-        {
-            m_lastSymbolTokenStack.Add(token);
-            if (m_lastSymbolTokenStack.Count > m_maxCount * 2)
-                m_lastSymbolTokenStack.RemoveAt(0);
-
-            var newReference = new SymbolReference(token, referenceType, currentScope);
-            currentScope.PushSymbolReference(newReference);
-        }
-
-        public void PopSymbolReference(Token token, Scope currentScope)
-        {
-            m_lastSymbolTokenStack.RemoveAt(m_lastSymbolTokenStack.Count - 1);
-
-            currentScope.PopSymbolReference();
-        }
-
-        public Token PeekLastSymbolToken(int count)
-        {
-            if (count > m_lastSymbolTokenStack.Count)
-                throw new IndexOutOfRangeException();
-
-            return m_lastSymbolTokenStack[m_lastSymbolTokenStack.Count - count];
-        }
-
-        #endregion
-
         /// <summary>
         /// 判断该文法是否是LL(1)的
         /// </summary>
@@ -994,9 +927,19 @@ namespace Compiler.Syntax
             return counter;
         }
 
+        private static void PrintSymbolTable(SymbolTable symbolTable)
+        {
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine("");
+            MyLogger.WriteLine("Symbol Table:");
+            MyLogger.WriteLine(symbolTable.ToString());
+        }
+
         internal class Result
         {
             public List<CompileError> Errors = new List<CompileError>();
+
+            public SymbolTable SymbolTable;
 
             public void AppendError(CompileError error)
             {

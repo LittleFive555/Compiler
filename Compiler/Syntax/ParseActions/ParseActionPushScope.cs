@@ -14,18 +14,18 @@ namespace Compiler.Syntax.ParseActions
         {
             if (m_arguments.Count >= 1)
             {
-                var symbolToken = parser.PeekLastSymbolToken(int.Parse(m_arguments[0]));
-                parser.PushScope(new Scope(symbolToken, parser.CurrentScope));
+                var symbolToken = parser.CurrentFile.PeekLastSymbolToken(int.Parse(m_arguments[0]));
+                parser.CurrentFile.PushScope(new Scope(symbolToken, parser.CurrentFile.CurrentScope));
             }
             else
             {
-                parser.PushScope(new Scope(parserContext.CurrentToken.Line, parserContext.CurrentToken.StartColumn, parser.CurrentScope));
+                parser.CurrentFile.PushScope(new Scope(parserContext.CurrentToken.Line, parserContext.CurrentToken.StartColumn, parser.CurrentFile.CurrentScope));
             }
         }
 
         public override void RevertExecute(SyntaxAnalyzer parser)
         {
-            parser.RevertScope();
+            parser.CurrentFile.RevertScope();
         }
     }
 }

@@ -19,7 +19,7 @@ namespace Compiler.Syntax.Model
 
         public override string ToString()
         {
-            return string.Format("{0}:({1},{2})", Token.Document.AbsolutePath, Token.Line, Token.StartColumn);
+            return string.Format("{0}:({1},{2})", Token.FileData.DocumentUri.AbsolutePath, Token.Line, Token.StartColumn);
         }
 
         public override bool Equals(object? obj)

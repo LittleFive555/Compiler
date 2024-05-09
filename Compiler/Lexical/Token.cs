@@ -4,16 +4,16 @@
     {
         public string Content { get; }
         public LexicalUnit LexicalUnit { get; }
-        public Uri Document { get; }
+        public FileData FileData { get; }
         public int Line { get; }
         public int StartColumn { get; }
         public int Length { get; }
 
-        public Token(string content, LexicalUnit lexicalUnit, Uri document, int line, int startColumn, int length)
+        public Token(string content, LexicalUnit lexicalUnit, FileData fileData, int line, int startColumn, int length)
         {
             Content = content;
             LexicalUnit = lexicalUnit;
-            Document = document;
+            FileData = fileData;
             Line = line;
             StartColumn = startColumn;
             Length = length;
@@ -33,7 +33,7 @@
         {
             return other is not null &&
                    Content == other.Content &&
-                   Document.AbsolutePath == other.Document.AbsolutePath &&
+                   FileData == other.FileData &&
                    Line == other.Line &&
                    StartColumn == other.StartColumn &&
                    Length == other.Length;
@@ -41,7 +41,7 @@
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Content, Document, Line, StartColumn, Length);
+            return HashCode.Combine(Content, FileData, Line, StartColumn, Length);
         }
 
         public static bool operator ==(Token? left, Token? right)

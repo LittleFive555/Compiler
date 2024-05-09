@@ -13,7 +13,7 @@ namespace Compiler.Syntax.Model
 
         public Scope BelongedScope { get; private set; }
 
-        private Dictionary<Uri, HashSet<SymbolReference>> m_references = new Dictionary<Uri, HashSet<SymbolReference>>();
+        private HashSet<SymbolReference> m_references = new HashSet<SymbolReference>();
 
         public Symbol(string name, Scope belongedScope)
         {
@@ -21,26 +21,20 @@ namespace Compiler.Syntax.Model
             BelongedScope = belongedScope;
         }
 
-        public void AddReferences(Uri uri, HashSet<SymbolReference> symbolReferences)
+        public void AddReferences(HashSet<SymbolReference> symbolReferences)
         {
-            m_references.Add(uri, symbolReferences);
+            m_references.UnionWith(symbolReferences);
         }
 
-        public IReadOnlyList<SymbolReference> GetReferences()
+        public IReadOnlySet<SymbolReference> GetReferences()
         {
-            List<SymbolReference> result = new List<SymbolReference>();
-            foreach (var reference in m_references.Values)
-                result.AddRange(reference);
-            return result;
+            return m_references;
         }
 
         public bool IsOneOfReference(Token token)
         {
-            if (!m_references.ContainsKey(token.Document))
-                return false;
-
             // XXX 这里随便传入一个ReferenceType，因为该变量不参与值比较
-            return m_references[token.Document].Contains(new SymbolReference(token, ReferenceType.VariableUse, null));
+            return m_references.Contains(new SymbolReference(token, ReferenceType.VariableUse, null));
         }
 
         public override string ToString()
@@ -53,11 +47,8 @@ namespace Compiler.Syntax.Model
             stringBuilder.Append(BelongedScope);
             stringBuilder.Append(", ");
             stringBuilder.Append("References:");
-            foreach (var fileReferences in m_references.Values)
-            {
-                foreach (var symbolReference in fileReferences)
-                    stringBuilder.AppendLine(symbolReference.ToString());
-            }
+            foreach (var symbolReference in m_references)
+                stringBuilder.AppendLine(symbolReference.ToString());
             return stringBuilder.ToString();
         }
     }

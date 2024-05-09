@@ -14,12 +14,12 @@ namespace Compiler.Syntax.ParseActions
 
         public override void Execute(SyntaxAnalyzer parser, ParserContext parserContext)
         {
-            m_poppedScope = parser.PopScope();
+            m_poppedScope = parser.CurrentFile.PopScope();
         }
 
         public override void RevertExecute(SyntaxAnalyzer parser)
         {
-            parser.PushScope(m_poppedScope);
+            parser.CurrentFile.PushScope(m_poppedScope);
         }
     }
 }
