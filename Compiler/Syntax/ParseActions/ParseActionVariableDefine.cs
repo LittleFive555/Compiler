@@ -1,16 +1,16 @@
 ﻿using Compiler.Lexical;
 using Compiler.Syntax.Model;
 
-namespace Compiler.Syntax
+namespace Compiler.Syntax.ParseActions
 {
-    internal class ParseActionTypeUse : ParseAction
+    internal class ParseActionVariableDefine : ParseAction
     {
-        public override string FunctionName => "TypeUse";
+        public override string FunctionName => "VariableDefine";
 
         private Token m_addedToken;
         private Scope m_scope;
 
-        public ParseActionTypeUse(string content) : base(content)
+        public ParseActionVariableDefine(string content) : base(content)
         {
         }
 
@@ -18,7 +18,7 @@ namespace Compiler.Syntax
         {
             m_addedToken = parserContext.CurrentToken;
             m_scope = parser.CurrentScope;
-            parser.SymbolTable.AddSymbolReference(parserContext.CurrentToken, ReferenceType.TypeUse, parser.CurrentScope);
+            parser.SymbolTable.AddSymbolReference(parserContext.CurrentToken, ReferenceType.VariableDefine, parser.CurrentScope);
             parser.SymbolTable.PushSymbolToken(parserContext.CurrentToken);
         }
 

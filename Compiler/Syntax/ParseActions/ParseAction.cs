@@ -1,4 +1,4 @@
-namespace Compiler.Syntax
+namespace Compiler.Syntax.ParseActions
 {
     internal abstract class ParseAction : SyntaxUnit
     {

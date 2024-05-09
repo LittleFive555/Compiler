@@ -1,6 +1,6 @@
 using Compiler.Syntax.Model;
 
-namespace Compiler.Syntax
+namespace Compiler.Syntax.ParseActions
 {
     internal class ParseActionPopScope : ParseAction
     {
