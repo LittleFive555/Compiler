@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using Compiler.Lexical;
+using System.Text;
 
 namespace Compiler.Syntax.Model
 {
@@ -8,20 +9,25 @@ namespace Compiler.Syntax.Model
 
         public Scope? ParentScope { get; }
 
+        public List<Scope> Children = new List<Scope>();
+
+        public Dictionary<string, List<SymbolReference>> References { get; } = new Dictionary<string, List<SymbolReference>>();
+        private List<SymbolReference> m_referencesList = new List<SymbolReference>();
+
         public int Level { get; }
 
         private int m_scopeAbility;
 
-        public Scope(Symbol symbol, params ScopeAbility[] scopeAbilities) : this(scopeAbilities)
+        public Scope(Token token, Scope parentScope, params ScopeAbility[] scopeAbilities) : this(scopeAbilities)
         {
-            var parentScope = symbol.BelongedScope;
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append(parentScope.Identifier);
             stringBuilder.Append(", ");
-            stringBuilder.Append(symbol.Name);
+            stringBuilder.Append(token.Content);
             Identifier = stringBuilder.ToString();
 
             ParentScope = parentScope;
+            ParentScope.PushChild(this);
 
             Level = parentScope.Level + 1;
         }
@@ -35,6 +41,7 @@ namespace Compiler.Syntax.Model
             Identifier = stringBuilder.ToString();
 
             ParentScope = parentScope;
+            ParentScope.PushChild(this);
 
             Level = parentScope.Level + 1;
         }
@@ -62,6 +69,16 @@ namespace Compiler.Syntax.Model
                 return false;
         }
 
+        public void PushChild(Scope childScope)
+        {
+            Children.Add(childScope);
+        }
+
+        public void PopChild()
+        {
+            Children.RemoveAt(Children.Count - 1);
+        }
+
         public bool IsParentOf(Scope scope)
         {
             return scope.Identifier.StartsWith(Identifier) && scope.Identifier != Identifier;
@@ -71,6 +88,27 @@ namespace Compiler.Syntax.Model
         {
             return Identifier.StartsWith(scope.Identifier) && scope.Identifier != Identifier;
         }
+
+        public void PushSymbolReference(SymbolReference symbolReference)
+        {
+            string symbolName = symbolReference.Token.Content;
+            if (!References.ContainsKey(symbolName))
+                References.Add(symbolName, new List<SymbolReference>());
+            References[symbolName].Add(symbolReference);
+
+            m_referencesList.Add(symbolReference);
+        }
+
+        public SymbolReference PopSymbolReference()
+        {
+            var removed = m_referencesList[m_referencesList.Count - 1];
+            string symbolName = removed.Token.Content;
+            References[symbolName].RemoveAt(References[symbolName].Count - 1);
+            m_referencesList.Remove(removed);
+            return removed;
+        }
+
+        #region override
 
         public override string ToString()
         {
@@ -102,5 +140,7 @@ namespace Compiler.Syntax.Model
         {
             return !(left == right);
         }
+
+        #endregion
     }
 }

@@ -8,10 +8,13 @@ namespace Compiler.Syntax.Model
 
         public ReferenceType ReferenceType { get; }
 
-        public SymbolReference(Token token, ReferenceType referenceType)
+        public Scope AppearScope { get; }
+
+        public SymbolReference(Token token, ReferenceType referenceType, Scope appearScope)
         {
             Token = token;
             ReferenceType = referenceType;
+            AppearScope = appearScope;
         }
 
         public override string ToString()

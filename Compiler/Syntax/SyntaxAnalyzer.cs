@@ -15,8 +15,9 @@ namespace Compiler.Syntax
         private readonly SyntaxUnit StartSyntaxUnit = new SymbolName(StartSymbol);
         private readonly SyntaxUnit EndSyntaxUnit = new SymbolName(EndSymbol);
 
-        public SymbolTable SymbolTable { get; } = new SymbolTable();
+        public SymbolTable SymbolTable { get; }
 
+        private Scope m_rootScope = new Scope();
         private Stack<Scope> m_scopeStack = new Stack<Scope>();
 
         public Scope CurrentScope => m_scopeStack.Peek();
@@ -53,7 +54,8 @@ namespace Compiler.Syntax
             m_predictiveAnylisisTable = PredictiveAnalysisTable(firstSet, followSet);
             PrintPredictiveAnalysisTable(m_predictiveAnylisisTable);
 
-            PushScope(new Scope());
+            SymbolTable = new SymbolTable(m_rootScope);
+            PushScope(m_rootScope);
         }
 
         public Result Execute(Uri documentUri, List<Token> tokens)
@@ -181,6 +183,7 @@ namespace Compiler.Syntax
                 }
                 currentSyntaxUnit = stack.Peek();
             }
+            SymbolTable.CollectSymbols();
             MyLogger.WriteLine("");
             MyLogger.WriteLine("");
             MyLogger.WriteLine("Symbol Table:");
@@ -775,9 +778,52 @@ namespace Compiler.Syntax
             m_scopeStack.Push(scope);
         }
 
+        /// <summary>
+        /// 用于分析正常过程中的作用域进出
+        /// </summary>
         public Scope PopScope()
         {
-            return m_scopeStack.Pop();
+            var lastScope = m_scopeStack.Pop();
+            return lastScope;
+        }
+
+        /// <summary>
+        /// 用于回溯
+        /// </summary>
+        public Scope RevertScope()
+        {
+            var lastScope = m_scopeStack.Pop();
+            if (lastScope.ParentScope != null)
+                lastScope.ParentScope.PopChild();
+            return lastScope;
+        }
+
+        private List<Token> m_lastSymbolTokenStack = new List<Token>();
+        private int m_maxCount = 50;
+
+        public void PushSymbolReference(Token token, ReferenceType referenceType, Scope currentScope)
+        {
+            m_lastSymbolTokenStack.Add(token);
+            if (m_lastSymbolTokenStack.Count > m_maxCount * 2)
+                m_lastSymbolTokenStack.RemoveAt(0);
+
+            var newReference = new SymbolReference(token, referenceType, currentScope);
+            currentScope.PushSymbolReference(newReference);
+        }
+
+        public void PopSymbolReference(Token token, Scope currentScope)
+        {
+            m_lastSymbolTokenStack.RemoveAt(m_lastSymbolTokenStack.Count - 1);
+
+            currentScope.PopSymbolReference();
+        }
+
+        public Token PeekLastSymbolToken(int count)
+        {
+            if (count > m_lastSymbolTokenStack.Count)
+                throw new IndexOutOfRangeException();
+
+            return m_lastSymbolTokenStack[m_lastSymbolTokenStack.Count - count];
         }
 
         #endregion

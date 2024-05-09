@@ -2,9 +2,10 @@
 {
     public enum ReferenceType
     {
-        TypeDefine,
+        Default = 0,
+        VariableUse = 0,
         VariableDefine,
+        TypeDefine,
         TypeUse,
-        VariableUse,
     }
 }

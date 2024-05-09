@@ -9,44 +9,21 @@ namespace Compiler.Syntax.Model
 
         public string Identifier { get; }
 
-        public int Length { get; }
+        public int Length => Name.Length;
 
         public Scope BelongedScope { get; private set; }
 
         private Dictionary<Uri, HashSet<SymbolReference>> m_references = new Dictionary<Uri, HashSet<SymbolReference>>();
 
-        public Symbol(Token token, ReferenceType referenceType,Scope belongedScope)
+        public Symbol(string name, Scope belongedScope)
         {
-            Name = token.Content;
-            Length = token.Length;
+            Name = name;
             BelongedScope = belongedScope;
-            AddReference(token, referenceType);
         }
 
-        public void UpdateScope(Scope scope)
+        public void AddReferences(Uri uri, HashSet<SymbolReference> symbolReferences)
         {
-            BelongedScope = scope;
-        }
-
-        public void AddReference(Token token, ReferenceType referenceType)
-        {
-            var uri = token.Document;
-            if (!m_references.ContainsKey(uri))
-                m_references.Add(uri, new HashSet<SymbolReference>());
-            m_references[uri].Add(new SymbolReference(token, referenceType));
-        }
-
-        public void RemoveReference(Token token)
-        {
-            // XXX 这里随便传入一个ReferenceType，因为该变量不参与值比较
-            m_references[token.Document].Remove(new SymbolReference(token, ReferenceType.VariableUse));
-            if (m_references[token.Document].Count == 0)
-                m_references.Remove(token.Document);
-        }
-
-        public bool HaveReferences()
-        {
-            return GetReferences().Count > 0;
+            m_references.Add(uri, symbolReferences);
         }
 
         public IReadOnlyList<SymbolReference> GetReferences()
@@ -63,7 +40,7 @@ namespace Compiler.Syntax.Model
                 return false;
 
             // XXX 这里随便传入一个ReferenceType，因为该变量不参与值比较
-            return m_references[token.Document].Contains(new SymbolReference(token, ReferenceType.VariableUse));
+            return m_references[token.Document].Contains(new SymbolReference(token, ReferenceType.VariableUse, null));
         }
 
         public override string ToString()

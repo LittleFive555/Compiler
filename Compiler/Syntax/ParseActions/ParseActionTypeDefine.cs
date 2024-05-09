@@ -18,14 +18,12 @@ namespace Compiler.Syntax.ParseActions
         {
             m_addedToken = parserContext.CurrentToken;
             m_scope = parser.CurrentScope;
-            parser.SymbolTable.AddSymbolReference(parserContext.CurrentToken, ReferenceType.TypeDefine, parser.CurrentScope);
-            parser.SymbolTable.PushSymbolToken(parserContext.CurrentToken);
+            parser.PushSymbolReference(parserContext.CurrentToken, ReferenceType.TypeDefine, parser.CurrentScope);
         }
 
         public override void RevertExecute(SyntaxAnalyzer parser)
         {
-            parser.SymbolTable.RemoveSymbolReference(m_addedToken, m_scope);
-            parser.SymbolTable.PopSymbolToken();
+            parser.PopSymbolReference(m_addedToken, m_scope);
         }
     }
 }

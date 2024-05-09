@@ -14,12 +14,8 @@ namespace Compiler.Syntax.ParseActions
         {
             if (m_arguments.Count >= 1)
             {
-                var symbolToken = parser.SymbolTable.PeekLastSymbolToken(int.Parse(m_arguments[0]));
-                var symbol = parser.SymbolTable.GetSymbol(symbolToken);
-                if (symbol == null)
-                    throw new Exception();
-
-                parser.PushScope(new Scope(symbol));
+                var symbolToken = parser.PeekLastSymbolToken(int.Parse(m_arguments[0]));
+                parser.PushScope(new Scope(symbolToken, parser.CurrentScope));
             }
             else
             {
@@ -29,7 +25,7 @@ namespace Compiler.Syntax.ParseActions
 
         public override void RevertExecute(SyntaxAnalyzer parser)
         {
-            parser.PopScope();
+            parser.RevertScope();
         }
     }
 }
